@@ -5,7 +5,15 @@
 - Permissions have to be mapped only for read files
 
 - Whitelist the local URI and add the Oauth callback to get the user credentials
-  `google.oauth.callback.uri=https://e5d5-27-116-40-252.in.ngrok.io/oauth`
+  `google.oauth.callback.uri=http://localhost/oauth`
 
 - Download the client secret and store in the path specified 
   `google.app.secret.key.path=classpath:keys/client_secret.json`
+
+- Add test users initially before publishing the project
+
+# links
+- https://medium.com/javarevisited/oauth-2-0-with-google-client-libraries-java-sdk-e5439accdf7a
+- https://developers.google.com/api-client-library/java/google-api-java-client/oauth2
+- https://developers.google.com/identity/sign-in/android/backend-auth
+- https://github.com/googleworkspace/java-samples
