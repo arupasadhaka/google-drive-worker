@@ -1,5 +1,6 @@
 package com.example.oslash.manager;
 
+import com.example.oslash.models.User;
 import com.example.oslash.service.UserService;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.*;
@@ -49,9 +50,14 @@ public class GoogleApiManager {
     @Autowired
     private ApplicationContext appContext;
 
-    private  static GoogleApiManager INSTANCE;
+    @Autowired
+    private UserService userService;
+
     public final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     public final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+
+    private static GoogleApiManager INSTANCE;
+
     private GoogleAuthorizationCodeFlow authorizationCodeFlow;
 
     private final List<String> SCOPES = new ArrayList<String>();
@@ -89,16 +95,19 @@ public class GoogleApiManager {
     }
 
     public Person saveUserDetails(GoogleTokenResponse response) throws Exception {
-        Person user = this.peopleService().people().get("people/me")
-                .setOauthToken(response.getAccessToken())
-                .setPersonFields("names,emailAddresses")
-                .execute();
-
+        Person person = this.peopleService().people().get("people/me")
+            .setOauthToken(response.getAccessToken())
+            // check and add additional fields
+            .setPersonFields("names,emailAddresses")
+            .execute();
         // persist refresh token with user details in mongo with encryption
         String refreshToken = response.getRefreshToken();
-        String userEmail = user.getEmailAddresses().stream().filter(email -> email.getMetadata().getPrimary()).map(email -> email.getValue()).findFirst().orElseGet(() -> "");
-        this.authorizationCodeFlow().createAndStoreCredential(response, userEmail);
-        return user;
+        String userId = person.getResourceName();
+        String primaryEmail = person.getEmailAddresses().stream().filter(email -> email.getMetadata().getPrimary()).map(email -> email.getValue()).findFirst().orElseGet(() -> "");
+        User user = new User.Builder().content(person).email(primaryEmail).refreshToken(refreshToken).id(userId).build();
+        userService.save(user).block();
+        this.authorizationCodeFlow().createAndStoreCredential(response, userId);
+        return person;
     }
 
 

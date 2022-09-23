@@ -13,7 +13,11 @@
 - Add test users initially before publishing the project
 
 # links
+## google api
 - https://medium.com/javarevisited/oauth-2-0-with-google-client-libraries-java-sdk-e5439accdf7a
 - https://developers.google.com/api-client-library/java/google-api-java-client/oauth2
 - https://developers.google.com/identity/sign-in/android/backend-auth
 - https://github.com/googleworkspace/java-samples
+
+## mongo reactive
+- https://www.baeldung.com/spring-data-mongodb-reactive
