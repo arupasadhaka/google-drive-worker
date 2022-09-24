@@ -6,13 +6,19 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 import com.amazonaws.services.sqs.model.ListQueuesResult;
+import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.utils.Constants;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class MessageQueConfiguration {
+
+    @Autowired
+    AppConfiguration appConfiguration;
+
     @Value("${aws.sqs.endpoint}")
     String endPoint;
 
@@ -34,9 +40,9 @@ public class MessageQueConfiguration {
             .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
             .withEndpointConfiguration(endpointConfiguration)
             .build();
-        final ListQueuesResult listQueuesResult = sqsAsync.listQueues(Constants.QUEUE_NAME);
+        final ListQueuesResult listQueuesResult = sqsAsync.listQueues(appConfiguration.getQueName());
         if (listQueuesResult.getQueueUrls().isEmpty()) {
-            sqsAsync.createQueueAsync(Constants.QUEUE_NAME);
+            sqsAsync.createQueueAsync(appConfiguration.getQueName());
         }
         return sqsAsync;
     }

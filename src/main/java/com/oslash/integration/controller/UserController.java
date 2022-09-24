@@ -4,7 +4,12 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeReque
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.services.people.v1.model.Person;
 import com.google.common.base.Preconditions;
+import com.oslash.integration.config.AppConfiguration;
+import com.oslash.integration.manager.ManagerConfiguration;
 import io.micrometer.core.instrument.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +29,15 @@ import static com.oslash.integration.resolver.GoogleApiResolver.apiResolver;
 @Profile("manager")
 @Controller
 public class UserController {
+
+    private final Logger logger = LoggerFactory.getLogger(UserController.class);
+
+    @Autowired
+    AppConfiguration appConfiguration;
+
+    @Autowired
+    ManagerConfiguration manager;
+
     @GetMapping(value = {"/"})
     public void landingPage(HttpServletResponse response) throws Exception {
         response.sendRedirect("/signup");
@@ -41,7 +55,9 @@ public class UserController {
         String authCode = request.getParameter("code");
         Preconditions.checkArgument(StringUtils.isNotEmpty(authCode), "Invalid auth code");
         GoogleTokenResponse tokenResponse = apiResolver().authorizationCodeFlow().newTokenRequest(authCode).setRedirectUri(apiResolver().callBackUrl()).execute();
-        Person result = apiResolver().saveUserDetails(tokenResponse);
-        return result;
+        Person userDetails = apiResolver().saveUserDetails(tokenResponse);
+        manager.scheduleJobForUser(userDetails);
+        return userDetails;
     }
+
 }

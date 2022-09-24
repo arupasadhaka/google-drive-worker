@@ -14,12 +14,13 @@ spring:
     enabled: 'false'
   data:
     mongodb:
-      port: '27017'
-      host: localhost
+#      port: '27017'
+#      host: 127.0.0.1
+#      database: oslash
+#      username: root
+#      password: root
+      uri: mongodb://root:root@localhost:27017/?authSource=admin&authMechanism=SCRAM-SHA-1
       database: oslash
-      username: root
-      password: root
-
   ## check and add
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
@@ -31,6 +32,17 @@ spring:
   batch:
     jdbc:
       schema: classpath:org/springframework/batch/core/schema-mysql.sql
+    job:
+      enabled: false # disable on startup
+
+app:
+  sqs:
+    que:
+      name: file-meta-simple-que
+  batch:
+    step:
+      name: simpleStep
+
 aws:
   sqs:
     endpoint: http://localhost:4566
@@ -38,9 +50,6 @@ aws:
   accessKey: ''
   secretKey: ''
 
-app:
-  sqs:
-    que-name: "file-meta-simple-que"
 google:
   app:
     secret:

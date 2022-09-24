@@ -1,11 +1,18 @@
 package com.oslash.integration.manager;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.google.api.services.people.v1.model.Person;
+import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.utils.Constants;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.integration.partition.RemotePartitioningManagerStepBuilderFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -17,11 +24,26 @@ import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.json.ObjectToJsonTransformer;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @Configuration
 @Profile("manager")
 public class ManagerConfiguration {
+    private final Logger logger = LoggerFactory.getLogger(ManagerConfiguration.class);
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    @Autowired
+    private AppConfiguration appConfiguration;
+
+
     @Autowired
     private JobBuilderFactory jobBuilderFactory;
+
+    @Autowired
+    private JobLauncher jobLauncher;
 
     @Autowired
     private RemotePartitioningManagerStepBuilderFactory stepBuilderFactory;
@@ -34,12 +56,8 @@ public class ManagerConfiguration {
     @Bean
     public IntegrationFlow outboundFlow(AmazonSQSAsync sqsAsync) {
         SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(sqsAsync);
-        sqsMessageHandler.setQueue(Constants.QUEUE_NAME);
-        return IntegrationFlows.from(outboundRequests())
-                .transform(objectToJsonTransformer())
-                .log()
-                .handle(sqsMessageHandler)
-                .get();
+        sqsMessageHandler.setQueue(appConfiguration.getQueName());
+        return IntegrationFlows.from(outboundRequests()).transform(objectToJsonTransformer()).log().handle(sqsMessageHandler).get();
     }
 
     @Bean
@@ -47,12 +65,9 @@ public class ManagerConfiguration {
         return new ObjectToJsonTransformer();
     }
 
-    @Bean(name = "partitionerJob")
+    @Bean
     public Job partitionerJob() {
-        return jobBuilderFactory.get("partitioningJob")
-                .start(partitionerStep())
-                .incrementer(new RunIdIncrementer())
-                .build();
+        return jobBuilderFactory.get("partitioningJob").start(partitionerStep()).incrementer(new RunIdIncrementer()).build();
     }
 
     @Bean
@@ -62,9 +77,30 @@ public class ManagerConfiguration {
 
     @Bean
     public Step partitionerStep() {
-        return stepBuilderFactory.get("partitionerStep")
-                .partitioner(Constants.WORKER_STEP_NAME, partitioner())
-                .outputChannel(outboundRequests())
-                .build();
+        return stepBuilderFactory.get("partitionerStep").partitioner(appConfiguration.getStepName(), partitioner()).outputChannel(outboundRequests()).build();
+    }
+
+    public void scheduleJobForUser(Person userDetails) {
+        CompletableFuture completableFuture = new CompletableFuture();
+        synchronized (userDetails.getResourceName()) {
+            completableFuture.completeAsync(() -> {
+                try {
+                    JobParameters params = new JobParametersBuilder().addString(Constants.USER_ID, userDetails.getResourceName()).toJobParameters();
+                    Job userJob = jobBuilderFactory.get(String.format("%s-%s", "partitioningJob", userDetails.getResourceName())).start(partitionerStep()).incrementer(new RunIdIncrementer()).preventRestart().build();
+                    jobLauncher.run(userJob, params);
+                } catch (JobExecutionAlreadyRunningException ex) {
+                    logger.info(String.format("job already scheduled for %s", userDetails.getResourceName()), ex);
+                } catch (JobInstanceAlreadyCompleteException e) {
+                    logger.info(String.format("job already completed for %s", userDetails.getResourceName()), e);
+                } catch (JobParametersInvalidException e) {
+                    logger.error(String.format("job parameters are invalid for %s", userDetails.getResourceName()), e);
+                    throw new RuntimeException(e);
+                } catch (JobRestartException e) {
+                    logger.error(String.format("restart job to continue for %s", userDetails.getResourceName()), e);
+                    throw new RuntimeException(e);
+                }
+                return null;
+            });
+        }
     }
 }

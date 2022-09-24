@@ -1,9 +1,9 @@
 package com.oslash.integration.resolver;
 
-import com.oslash.integration.service.UserService;
-import com.oslash.integration.models.User;
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.googleapis.auth.oauth2.*;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -13,6 +13,10 @@ import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.people.v1.PeopleService;
 import com.google.api.services.people.v1.PeopleServiceScopes;
 import com.google.api.services.people.v1.model.Person;
+import com.oslash.integration.models.User;
+import com.oslash.integration.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -26,42 +30,33 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.SEVERE;
 
 // implement interface and expose static methods
 @Component
 public class GoogleApiResolver {
-    private final Logger logger = Logger.getLogger(GoogleApiResolver.class.getName());
-
-    @Value("${google.app.access.type}")
-    private String accessType;
-
-    @Value("${spring.application.name}")
-    private String appName;
-
-    @Value("${google.app.secret.key.path}")
-    private Resource appSecretKey;
-
-    @Value(("${google.oauth.callback.uri}"))
-    private String callBackUrl;
-
-    @Autowired
-    private ApplicationContext appContext;
-
-    @Autowired
-    private UserService userService;
-
+    private static GoogleApiResolver INSTANCE;
     public final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     public final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
-
-    private static GoogleApiResolver INSTANCE;
-
+    private final Logger logger = LoggerFactory.getLogger(GoogleApiResolver.class);
+    private final List<String> SCOPES = new ArrayList<String>();
+    @Value("${google.app.access.type}")
+    private String accessType;
+    @Value("${spring.application.name}")
+    private String appName;
+    @Value("${google.app.secret.key.path}")
+    private Resource appSecretKey;
+    @Value(("${google.oauth.callback.uri}"))
+    private String callBackUrl;
+    @Autowired
+    private ApplicationContext appContext;
+    @Autowired
+    private UserService userService;
     private GoogleAuthorizationCodeFlow authorizationCodeFlow;
 
-    private final List<String> SCOPES = new ArrayList<String>();
-
+    public static GoogleApiResolver apiResolver() {
+        assert INSTANCE != null : "driver not initialized";
+        return INSTANCE;
+    }
 
     @EventListener(ApplicationReadyEvent.class)
     public void init(ApplicationReadyEvent event) {
@@ -78,7 +73,7 @@ public class GoogleApiResolver {
             initializeAuthFlow();
             INSTANCE = this;
         } catch (Exception e) {
-            logger.log(SEVERE, String.format("Error connecting to google drive auth flow : reason %s", e.getMessage()), e);
+            logger.error(String.format("Error connecting to google drive auth flow : reason %s", e.getMessage()), e);
             SpringApplication.exit(appContext, () -> 0);
         }
     }
@@ -97,10 +92,10 @@ public class GoogleApiResolver {
 
     public Person saveUserDetails(GoogleTokenResponse response) throws Exception {
         Person person = this.peopleService().people().get("people/me")
-            .setOauthToken(response.getAccessToken())
-            // check and add additional fields
-            .setPersonFields("names,emailAddresses")
-            .execute();
+                .setOauthToken(response.getAccessToken())
+                // check and add additional fields
+                .setPersonFields("names,emailAddresses")
+                .execute();
         // persist refresh token with user details in mongo with encryption
         String refreshToken = response.getRefreshToken();
         String userId = person.getResourceName();
@@ -111,14 +106,8 @@ public class GoogleApiResolver {
         return person;
     }
 
-
     public GoogleAuthorizationCodeFlow authorizationCodeFlow() {
         return authorizationCodeFlow;
-    }
-
-    public static GoogleApiResolver apiResolver() {
-        assert INSTANCE != null : "driver not initialized";
-        return INSTANCE;
     }
 
     public String callBackUrl() {

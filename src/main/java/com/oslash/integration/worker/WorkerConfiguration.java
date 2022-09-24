@@ -1,8 +1,8 @@
 package com.oslash.integration.worker;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.models.FileMeta;
-import com.oslash.integration.utils.Constants;
 import com.oslash.integration.worker.writer.FileMetaWriter;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -32,8 +32,13 @@ import java.util.List;
 @Configuration
 @Profile("worker")
 public class WorkerConfiguration {
+
+    @Autowired
+    AppConfiguration appConfiguration;
+
     @Autowired
     FileMetaWriter fileMetaWriter;
+
     @Autowired
     private JobBuilderFactory jobBuilderFactory;
     @Autowired
@@ -45,7 +50,7 @@ public class WorkerConfiguration {
     @Bean
     @ConditionalOnMissingBean(value = ObjectNamingStrategy.class, search = SearchStrategy.CURRENT)
     public IntegrationFlow inboundFlow(AmazonSQSAsync sqsAsync) {
-        SqsMessageDrivenChannelAdapter adapter = new SqsMessageDrivenChannelAdapter(sqsAsync, Constants.QUEUE_NAME);
+        SqsMessageDrivenChannelAdapter adapter = new SqsMessageDrivenChannelAdapter(sqsAsync, appConfiguration.getQueName());
         return IntegrationFlows.from(adapter).transform(jsonToObjectTransformer()).channel(inboundRequests()).get();
     }
 
@@ -61,13 +66,7 @@ public class WorkerConfiguration {
 
     @Bean(name = "simpleStep")
     public Step simpleStep() {
-        return stepBuilderFactory.get(Constants.WORKER_STEP_NAME)
-                .inputChannel(inboundRequests())
-                .<Integer, FileMeta>chunk(100)
-                .reader(itemReader(null))
-                .processor(itemProcessor())
-                .writer(itemWriter())
-                .build();
+        return stepBuilderFactory.get(appConfiguration.getStepName()).inputChannel(inboundRequests()).<Integer, FileMeta>chunk(100).reader(itemReader(null)).processor(itemProcessor()).writer(itemWriter()).build();
     }
 
     @Bean
