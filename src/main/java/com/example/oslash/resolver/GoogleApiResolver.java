@@ -1,4 +1,4 @@
-package com.example.oslash.manager;
+package com.example.oslash.resolver;
 
 import com.example.oslash.models.User;
 import com.example.oslash.service.UserService;
@@ -32,8 +32,8 @@ import static java.util.logging.Level.SEVERE;
 
 // implement interface and expose static methods
 @Component
-public class GoogleApiManager {
-    private final Logger logger = Logger.getLogger(GoogleApiManager.class.getName());
+public class GoogleApiResolver {
+    private final Logger logger = Logger.getLogger(GoogleApiResolver.class.getName());
 
     @Value("${google.app.access.type}")
     private String accessType;
@@ -56,7 +56,7 @@ public class GoogleApiManager {
     public final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     public final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
 
-    private static GoogleApiManager INSTANCE;
+    private static GoogleApiResolver INSTANCE;
 
     private GoogleAuthorizationCodeFlow authorizationCodeFlow;
 
@@ -83,7 +83,7 @@ public class GoogleApiManager {
     }
 
     private PeopleService peopleService() throws IOException {
-        Credential credential = apiManager().authorizationCodeFlow().loadCredential("USER_IDENTIFIER_KEY");
+        Credential credential = apiResolver().authorizationCodeFlow().loadCredential("USER_IDENTIFIER_KEY");
         return new PeopleService.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName(appName).build();
     }
 
@@ -115,7 +115,7 @@ public class GoogleApiManager {
         return authorizationCodeFlow;
     }
 
-    public static GoogleApiManager apiManager() {
+    public static GoogleApiResolver apiResolver() {
         assert INSTANCE != null : "driver not initialized";
         return INSTANCE;
     }

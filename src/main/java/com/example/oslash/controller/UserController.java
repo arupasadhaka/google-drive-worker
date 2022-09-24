@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import static com.example.oslash.manager.GoogleApiManager.apiManager;
+import static com.example.oslash.resolver.GoogleApiResolver.apiResolver;
 
 
+// TODO: add support to fetch auth code by email, and initiate job for logged in users
 @Controller
 public class UserController {
-
     @GetMapping(value = {"/"})
     public void landingPage(HttpServletResponse response) throws Exception {
         response.sendRedirect("/signup");
@@ -25,17 +25,17 @@ public class UserController {
 
     @GetMapping(value = {"/signup"})
     public void signUp(HttpServletResponse response) throws Exception {
-        GoogleAuthorizationCodeRequestUrl url = apiManager().authorizationCodeFlow().newAuthorizationUrl();
-        String redirectURL = url.setRedirectUri(apiManager().callBackUrl()).setAccessType(apiManager().accessType()).build();
+        GoogleAuthorizationCodeRequestUrl url = apiResolver().authorizationCodeFlow().newAuthorizationUrl();
+        String redirectURL = url.setRedirectUri(apiResolver().callBackUrl()).setAccessType(apiResolver().accessType()).build();
         response.sendRedirect(redirectURL);
     }
 
     @GetMapping(value = {"/oauth"})
     public @ResponseBody Person oAuthCallback(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        String code = request.getParameter("code");
-        Preconditions.checkArgument(StringUtils.isNotEmpty(code), "Invalid auth code");
-        GoogleTokenResponse tokenResponse = apiManager().authorizationCodeFlow().newTokenRequest(code).setRedirectUri(apiManager().callBackUrl()).execute();
-        Person result = apiManager().saveUserDetails(tokenResponse);
+        String authCode = request.getParameter("code");
+        Preconditions.checkArgument(StringUtils.isNotEmpty(authCode), "Invalid auth code");
+        GoogleTokenResponse tokenResponse = apiResolver().authorizationCodeFlow().newTokenRequest(authCode).setRedirectUri(apiResolver().callBackUrl()).execute();
+        Person result = apiResolver().saveUserDetails(tokenResponse);
         return result;
     }
 }
