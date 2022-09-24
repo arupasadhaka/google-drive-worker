@@ -6,18 +6,21 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AppConfiguration {
 
-    @Value("${app.sqs.que.name}")
-    private String queName;
+    @Value("${app.sqs.que.request-name}")
+    private String requestQueName;
+
+    @Value("${app.sqs.que.reply-name}")
+    private String replyQueName;
 
     @Value("${app.batch.step.name}")
     private String stepName;
 
-    public String getQueName() {
-        return queName;
+    public String getRequestQueName() {
+        return requestQueName;
     }
 
-    public void setQueName(String queName) {
-        this.queName = queName;
+    public void setRequestQueName(String requestQueName) {
+        this.requestQueName = requestQueName;
     }
 
     public String getStepName() {
@@ -28,4 +31,11 @@ public class AppConfiguration {
         this.stepName = stepName;
     }
 
+    public String getReplyQueName() {
+        return replyQueName;
+    }
+
+    public void setReplyQueName(String replyQueName) {
+        this.replyQueName = replyQueName;
+    }
 }

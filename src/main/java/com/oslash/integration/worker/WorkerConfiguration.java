@@ -12,6 +12,7 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.SearchStrategy;
@@ -19,6 +20,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.integration.aws.inbound.SqsMessageDrivenChannelAdapter;
+import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
@@ -50,11 +52,21 @@ public class WorkerConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(value = ObjectNamingStrategy.class, search = SearchStrategy.CURRENT)
-    public IntegrationFlow inboundFlow(AmazonSQSAsync sqsAsync) {
-        SqsMessageDrivenChannelAdapter adapter = new SqsMessageDrivenChannelAdapter(sqsAsync, appConfiguration.getQueName());
+    public IntegrationFlow inboundFlow(@Qualifier("amazonSQSRequestAsync") AmazonSQSAsync sqsAsync) {
+        SqsMessageDrivenChannelAdapter adapter = new SqsMessageDrivenChannelAdapter(sqsAsync, appConfiguration.getRequestQueName());
         return IntegrationFlows.from(adapter)
                 .transform(messageTransformer())
-                .channel(inboundRequests())
+                .channel(requests())
+                .get();
+    }
+
+//    @Bean
+//    @ConditionalOnMissingBean(value = ObjectNamingStrategy.class, search = SearchStrategy.CURRENT)
+    public IntegrationFlow outboundFlow(AmazonSQSAsync sqsAsync) {
+        SqsMessageDrivenChannelAdapter adapter = new SqsMessageDrivenChannelAdapter(sqsAsync, appConfiguration.getRequestQueName());
+        return IntegrationFlows.from(adapter)
+                .transform(messageTransformer())
+                .channel(replies())
                 .get();
     }
 
@@ -64,14 +76,19 @@ public class WorkerConfiguration {
     }
 
     @Bean
-    public QueueChannel inboundRequests() {
+    public QueueChannel requests() {
         return new QueueChannel();
+    }
+
+    @Bean
+    public DirectChannel replies() {
+        return new DirectChannel();
     }
 
     @Bean(name = "simpleStep")
     public Step simpleStep() {
         return stepBuilderFactory.get(appConfiguration.getStepName())
-                .inputChannel(inboundRequests())
+                .inputChannel(requests())
                 .<Map, FileMeta>chunk(100)
                 .reader(itemReader(null))
                 .processor(itemProcessor())

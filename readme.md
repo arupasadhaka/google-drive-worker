@@ -41,11 +41,17 @@ http://localhost/signup
 - file meta and user details will be persisted in mongo db
 
 ## links
+
 ### Google api
 - https://medium.com/javarevisited/oauth-2-0-with-google-client-libraries-java-sdk-e5439accdf7a
 - https://developers.google.com/api-client-library/java/google-api-java-client/oauth2
 - https://developers.google.com/identity/sign-in/android/backend-auth
 - https://github.com/googleworkspace/java-samples
 - https://github.com/localstack/localstack
+
 ### mongo reactive
 - https://www.baeldung.com/spring-data-mongodb-reactive
+
+### spring-batch
+- https://docs.spring.io/spring-batch/docs/current/reference/html/spring-batch-integration.html#remote-chunking
+- https://github.com/spring-projects/spring-batch/issues/1488

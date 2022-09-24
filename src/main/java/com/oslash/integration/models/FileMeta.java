@@ -11,6 +11,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Map;
 
+import static java.util.Objects.nonNull;
+
 
 @Data
 @ToString
@@ -31,8 +33,9 @@ public class FileMeta {
         this.content = content;
     }
 
-    private FileMeta(Builder builder) {
+    public FileMeta(Builder builder) {
         setId(builder.id);
+        setUserId(builder.userId);
         setMimeType(builder.mimeType);
         setContent(builder.content);
     }
@@ -54,8 +57,13 @@ public class FileMeta {
             return this;
         }
 
-        public Builder email(String val) {
+        public Builder mimeType(String val) {
             mimeType = val;
+            return this;
+        }
+
+        public Builder userId(String val) {
+            userId = val;
             return this;
         }
 
@@ -66,11 +74,18 @@ public class FileMeta {
 
         public Builder file(Map item) {
             this.content = item;
-            File file = new File();
-            this.userId = String.valueOf(item.get(Constants.FILE_ID));
-            this.mimeType = String.valueOf(item.get(Constants.MIME_TYPE));
-            file.setId(String.valueOf(item.get(Constants.FILE_ID)));
-            this.file = file;
+            if (nonNull(item.get(Constants.FILE_ID))) {
+                this.id = String.valueOf(item.get(Constants.FILE_ID));
+            }
+            if (nonNull(item.get(Constants.MIME_TYPE))) {
+                this.mimeType = String.valueOf(item.get(Constants.MIME_TYPE));
+            }
+            if (nonNull(item.get(Constants.USER_ID))) {
+                this.userId = String.valueOf(item.get(Constants.USER_ID));
+            }
+            if (nonNull(item.get(Constants.CONTENT))) {
+                this.content = String.valueOf(item.get(Constants.CONTENT));
+            }
             return this;
         }
 

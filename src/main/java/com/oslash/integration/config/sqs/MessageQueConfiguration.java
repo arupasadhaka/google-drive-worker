@@ -7,7 +7,6 @@ import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 import com.amazonaws.services.sqs.model.ListQueuesResult;
 import com.oslash.integration.config.AppConfiguration;
-import com.oslash.integration.utils.Constants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -31,8 +30,8 @@ public class MessageQueConfiguration {
     @Value("${aws.secretKey}")
     String secretKey;
 
-    @Bean
-    public AmazonSQSAsync amazonSQSAsync() {
+    @Bean(name="amazonSQSRequestAsync")
+    public AmazonSQSAsync amazonSQSRequestAsync() {
         final AwsClientBuilder.EndpointConfiguration endpointConfiguration =
             new AwsClientBuilder.EndpointConfiguration(endPoint, awsRegion);
         final AmazonSQSAsync sqsAsync = AmazonSQSAsyncClientBuilder
@@ -40,9 +39,25 @@ public class MessageQueConfiguration {
             .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
             .withEndpointConfiguration(endpointConfiguration)
             .build();
-        final ListQueuesResult listQueuesResult = sqsAsync.listQueues(appConfiguration.getQueName());
+        final ListQueuesResult listQueuesResult = sqsAsync.listQueues(appConfiguration.getRequestQueName());
         if (listQueuesResult.getQueueUrls().isEmpty()) {
-            sqsAsync.createQueueAsync(appConfiguration.getQueName());
+            sqsAsync.createQueueAsync(appConfiguration.getRequestQueName());
+        }
+        return sqsAsync;
+    }
+
+    @Bean(name="amazonSQSReplyAsync")
+    public AmazonSQSAsync amazonSQSReplyAsync() {
+        final AwsClientBuilder.EndpointConfiguration endpointConfiguration =
+                new AwsClientBuilder.EndpointConfiguration(endPoint, awsRegion);
+        final AmazonSQSAsync sqsAsync = AmazonSQSAsyncClientBuilder
+                .standard()
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
+                .withEndpointConfiguration(endpointConfiguration)
+                .build();
+        final ListQueuesResult listQueuesResult = sqsAsync.listQueues(appConfiguration.getReplyQueName());
+        if (listQueuesResult.getQueueUrls().isEmpty()) {
+            sqsAsync.createQueueAsync(appConfiguration.getReplyQueName());
         }
         return sqsAsync;
     }

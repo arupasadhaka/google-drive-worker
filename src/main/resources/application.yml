@@ -38,7 +38,8 @@ spring:
 app:
   sqs:
     que:
-      name: file-meta-simple-que
+      request-name: file-meta-simple-request-que
+      reply-name: file-meta-simple-reply-que
   batch:
     step:
       name: simpleStep
