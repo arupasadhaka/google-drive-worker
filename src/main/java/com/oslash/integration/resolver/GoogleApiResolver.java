@@ -90,12 +90,7 @@ public class GoogleApiResolver {
         logger.info("connected to google drive auth flow");
     }
 
-    public Person saveUserDetails(GoogleTokenResponse response) throws Exception {
-        Person person = this.peopleService().people().get("people/me")
-                .setOauthToken(response.getAccessToken())
-                // check and add additional fields
-                .setPersonFields("names,emailAddresses")
-                .execute();
+    public User saveUserDetails(GoogleTokenResponse response, Person person) throws Exception {
         // persist refresh token with user details in mongo with encryption
         String refreshToken = response.getRefreshToken();
         String userId = person.getResourceName();
@@ -103,6 +98,15 @@ public class GoogleApiResolver {
         User user = new User.Builder().content(person).email(primaryEmail).refreshToken(refreshToken).id(userId).build();
         userService.save(user).block();
         this.authorizationCodeFlow().createAndStoreCredential(response, userId);
+        return user;
+    }
+
+    public Person getPerson(GoogleTokenResponse response) throws IOException {
+        Person person = this.peopleService().people().get("people/me")
+                .setOauthToken(response.getAccessToken())
+                // check and add additional fields
+                .setPersonFields("names,emailAddresses")
+                .execute();
         return person;
     }
 

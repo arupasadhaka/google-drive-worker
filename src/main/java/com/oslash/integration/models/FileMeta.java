@@ -1,11 +1,15 @@
 package com.oslash.integration.models;
 
+import com.google.api.services.drive.model.File;
+import com.oslash.integration.utils.Constants;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.Map;
 
 
 @Data
@@ -38,6 +42,10 @@ public class FileMeta {
         private String mimeType;
         private Object content;
 
+        private String userId;
+
+        private File file;
+
         public Builder() {
         }
 
@@ -53,6 +61,16 @@ public class FileMeta {
 
         public Builder content(Object val) {
             content = val;
+            return this;
+        }
+
+        public Builder file(Map item) {
+            this.content = item;
+            File file = new File();
+            this.userId = String.valueOf(item.get(Constants.FILE_ID));
+            this.mimeType = String.valueOf(item.get(Constants.MIME_TYPE));
+            file.setId(String.valueOf(item.get(Constants.FILE_ID)));
+            this.file = file;
             return this;
         }
 

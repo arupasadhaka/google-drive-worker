@@ -28,6 +28,7 @@ import org.springframework.jmx.export.naming.ObjectNamingStrategy;
 import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @Profile("worker")
@@ -51,11 +52,14 @@ public class WorkerConfiguration {
     @ConditionalOnMissingBean(value = ObjectNamingStrategy.class, search = SearchStrategy.CURRENT)
     public IntegrationFlow inboundFlow(AmazonSQSAsync sqsAsync) {
         SqsMessageDrivenChannelAdapter adapter = new SqsMessageDrivenChannelAdapter(sqsAsync, appConfiguration.getQueName());
-        return IntegrationFlows.from(adapter).transform(jsonToObjectTransformer()).channel(inboundRequests()).get();
+        return IntegrationFlows.from(adapter)
+                .transform(messageTransformer())
+                .channel(inboundRequests())
+                .get();
     }
 
     @Bean
-    public Transformer jsonToObjectTransformer() {
+    public Transformer messageTransformer() {
         return new MessageTransformerTransformer();
     }
 
@@ -66,7 +70,13 @@ public class WorkerConfiguration {
 
     @Bean(name = "simpleStep")
     public Step simpleStep() {
-        return stepBuilderFactory.get(appConfiguration.getStepName()).inputChannel(inboundRequests()).<Integer, FileMeta>chunk(100).reader(itemReader(null)).processor(itemProcessor()).writer(itemWriter()).build();
+        return stepBuilderFactory.get(appConfiguration.getStepName())
+                .inputChannel(inboundRequests())
+                .<Map, FileMeta>chunk(100)
+                .reader(itemReader(null))
+                .processor(itemProcessor())
+                .writer(itemWriter())
+                .build();
     }
 
     @Bean
@@ -75,26 +85,25 @@ public class WorkerConfiguration {
     }
 
     @Bean
-    public ItemProcessor<Integer, FileMeta> itemProcessor() {
+    public ItemProcessor<Map, FileMeta> itemProcessor() {
         return new ItemProcessor<>() {
             @Override
-            public FileMeta process(Integer item) {
-                return new FileMeta.Builder().content(item).build();
+            public FileMeta process(Map item) {
+                return new FileMeta.Builder().file(item).build();
             }
         };
     }
 
     @Bean
     @StepScope
-    public ItemReader<Integer> itemReader(@Value("#{stepExecutionContext['data']}") List<Integer> data) {
-        List<Integer> remainingData = new ArrayList<>(data);
+    public ItemReader<Map> itemReader(@Value("#{stepExecutionContext['data']}") List<Map> data) {
+        List<Map> remainingData = new ArrayList<>(data);
         return new ItemReader<>() {
             @Override
-            public Integer read() {
+            public Map read() {
                 if (remainingData.size() > 0) {
                     return remainingData.remove(0);
                 }
-
                 return null;
             }
         };

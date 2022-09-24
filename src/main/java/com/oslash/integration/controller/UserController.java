@@ -6,6 +6,7 @@ import com.google.api.services.people.v1.model.Person;
 import com.google.common.base.Preconditions;
 import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.manager.ManagerConfiguration;
+import com.oslash.integration.models.User;
 import io.micrometer.core.instrument.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,9 +56,10 @@ public class UserController {
         String authCode = request.getParameter("code");
         Preconditions.checkArgument(StringUtils.isNotEmpty(authCode), "Invalid auth code");
         GoogleTokenResponse tokenResponse = apiResolver().authorizationCodeFlow().newTokenRequest(authCode).setRedirectUri(apiResolver().callBackUrl()).execute();
-        Person userDetails = apiResolver().saveUserDetails(tokenResponse);
+        Person person = apiResolver().getPerson(tokenResponse);
+        User userDetails = apiResolver().saveUserDetails(tokenResponse, person);
         manager.scheduleJobForUser(userDetails);
-        return userDetails;
+        return person;
     }
 
 }

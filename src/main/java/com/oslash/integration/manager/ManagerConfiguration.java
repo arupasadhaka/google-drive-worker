@@ -1,8 +1,8 @@
 package com.oslash.integration.manager;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.google.api.services.people.v1.model.Person;
 import com.oslash.integration.config.AppConfiguration;
+import com.oslash.integration.models.User;
 import com.oslash.integration.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,19 +25,14 @@ import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.json.ObjectToJsonTransformer;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Configuration
 @Profile("manager")
 public class ManagerConfiguration {
     private final Logger logger = LoggerFactory.getLogger(ManagerConfiguration.class);
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
     @Autowired
     private AppConfiguration appConfiguration;
-
 
     @Autowired
     private JobBuilderFactory jobBuilderFactory;
@@ -47,6 +42,7 @@ public class ManagerConfiguration {
 
     @Autowired
     private RemotePartitioningManagerStepBuilderFactory stepBuilderFactory;
+
 
     @Bean
     public DirectChannel outboundRequests() {
@@ -65,38 +61,46 @@ public class ManagerConfiguration {
         return new ObjectToJsonTransformer();
     }
 
-    @Bean
-    public Job partitionerJob() {
-        return jobBuilderFactory.get("partitioningJob").start(partitionerStep()).incrementer(new RunIdIncrementer()).build();
+
+    public Job partitionerJob(User user) {
+        return jobBuilderFactory.get("partitioningJob")
+                .start(partitionerStep(user))
+                .incrementer(new RunIdIncrementer())
+                .build();
     }
 
-    @Bean
-    public FileMetaPartitioner partitioner() {
-        return new FileMetaPartitioner();
+
+    public FileMetaPartitioner partitioner(User user) {
+        return new FileMetaPartitioner(user);
     }
 
-    @Bean
-    public Step partitionerStep() {
-        return stepBuilderFactory.get("partitionerStep").partitioner(appConfiguration.getStepName(), partitioner()).outputChannel(outboundRequests()).build();
+    public Step partitionerStep(User user) {
+        return stepBuilderFactory.get("partitionerStep")
+                .partitioner(appConfiguration.getStepName(), partitioner(user))
+                .outputChannel(outboundRequests())
+                .build();
     }
 
-    public void scheduleJobForUser(Person userDetails) {
+    public void scheduleJobForUser(User user) {
         CompletableFuture completableFuture = new CompletableFuture();
-        synchronized (userDetails.getResourceName()) {
+        synchronized (user.getId()) {
             completableFuture.completeAsync(() -> {
                 try {
-                    JobParameters params = new JobParametersBuilder().addString(Constants.USER_ID, userDetails.getResourceName()).toJobParameters();
-                    Job userJob = jobBuilderFactory.get(String.format("%s-%s", "partitioningJob", userDetails.getResourceName())).start(partitionerStep()).incrementer(new RunIdIncrementer()).preventRestart().build();
+                    JobParameters params = new JobParametersBuilder().addString(Constants.USER_ID, user.getId()).toJobParameters();
+                    Job userJob = jobBuilderFactory.get(String.format("%s-%s", "partitioningJob", user.getId()))
+                            .start(partitionerStep(user))
+                            .incrementer(new RunIdIncrementer())
+                            .build();
                     jobLauncher.run(userJob, params);
                 } catch (JobExecutionAlreadyRunningException ex) {
-                    logger.info(String.format("job already scheduled for %s", userDetails.getResourceName()), ex);
+                    logger.info(String.format("job already scheduled for %s", user.getId()), ex);
                 } catch (JobInstanceAlreadyCompleteException e) {
-                    logger.info(String.format("job already completed for %s", userDetails.getResourceName()), e);
+                    logger.info(String.format("job already completed for %s", user.getId()), e);
                 } catch (JobParametersInvalidException e) {
-                    logger.error(String.format("job parameters are invalid for %s", userDetails.getResourceName()), e);
+                    logger.error(String.format("job parameters are invalid for %s", user.getId()), e);
                     throw new RuntimeException(e);
                 } catch (JobRestartException e) {
-                    logger.error(String.format("restart job to continue for %s", userDetails.getResourceName()), e);
+                    logger.error(String.format("restart job to continue for %s", user.getId()), e);
                     throw new RuntimeException(e);
                 }
                 return null;
