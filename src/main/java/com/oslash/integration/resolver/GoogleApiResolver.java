@@ -72,6 +72,7 @@ public class GoogleApiResolver {
     private void init() {
         try {
             logger.info("fetching secrets");
+            // TODO: ADD only read permissions for drive and people
             SCOPES.addAll(DriveScopes.all());
             SCOPES.addAll(PeopleServiceScopes.all());
             initializeAuthFlow();

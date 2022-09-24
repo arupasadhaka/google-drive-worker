@@ -5,6 +5,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.services.people.v1.model.Person;
 import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.util.StringUtils;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -15,7 +16,12 @@ import javax.servlet.http.HttpServletResponse;
 import static com.oslash.integration.resolver.GoogleApiResolver.apiResolver;
 
 
-// TODO: add support to fetch auth code by email, and initiate job for logged in users
+/**
+ * TODO: Add support to fetch auth code by email and refresh token
+ * and initiate job for logged in users
+ * - session handling
+ */
+@Profile("manager")
 @Controller
 public class UserController {
     @GetMapping(value = {"/"})
