@@ -29,7 +29,12 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-src/main/resources/keys/*
+
 
 ### VS Code ###
 .vscode/
+
+### Setup ###
+.DS_Store
+src/main/resources/keys/*
+classpath:/credentials/StoredCredential
