@@ -1,0 +1,80 @@
+spring:
+  devtools:
+    add-properties: 'true'
+    livereload:
+      port: '35730'
+      enabled: 'true'
+  jpa:
+    database: mysql
+    hibernate:
+      ddl-auto: create
+  application:
+    name: Oslash GDrive Integration
+  jmx:
+    enabled: 'false'
+  data:
+    mongodb:
+      port: '27017'
+      host: 127.0.0.1
+      database: oslash
+
+  ## check and add
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+  datasource:
+    password: mysql
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    url: jdbc:mysql://localhost:3306/oslash?createDatabaseIfNotExist=true
+  batch:
+    jdbc:
+      schema: classpath:org/springframework/batch/core/schema-mysql.sql
+aws:
+  sqs:
+    endpoint: http://localhost:4566
+  region: us-east-1
+  accessKey: ''
+  secretKey: ''
+
+app:
+  sqs:
+    que-name: "file-meta-simple-que"
+google:
+  app:
+    secret:
+      key:
+        path: classpath:keys/client_secret.json
+    access:
+      type: offline
+  credentials:
+    folder:
+      path: file:classpath:/credentials
+  oauth:
+    callback:
+      uri: http://localhost/oauth
+
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: manager
+  batch:
+    jdbc:
+      initialize-schema: ALWAYS
+server:
+  port: '80'
+
+---
+spring:
+  config:
+    activate:
+      on-profile: worker
+  batch:
+    jdbc:
+      initialize-schema: NEVER
+server:
+  port: '8000'
+
+---
