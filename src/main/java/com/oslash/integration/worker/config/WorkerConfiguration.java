@@ -20,10 +20,11 @@ import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.integration.async.AsyncItemProcessor;
+import org.springframework.batch.integration.async.AsyncItemWriter;
 import org.springframework.batch.integration.partition.RemotePartitioningWorkerStepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,7 +43,6 @@ import org.springframework.integration.transformer.Transformer;
 import org.springframework.jmx.export.naming.ObjectNamingStrategy;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,9 +103,19 @@ public class WorkerConfiguration {
     }
 
     public Flow fileMetaFlow() {
-        // todo move this to async
-        // .split(taskExecutor()).add(fileMetaSaveStep())
-        return new FlowBuilder<Flow>("split-file-downloader-flow").from(fileMetaSaveStep()).next(fileDownloadStep()).build();
+        Flow fileDownloadFlow = new FlowBuilder<Flow>("fileDownload-Flow")
+                .start(fileDownloadStep())
+                .build();
+
+        Flow parallelFlow = new FlowBuilder<Flow>("fileMetaSave-Flow")
+                .start(fileMetaSaveStep())
+                .split(new SimpleAsyncTaskExecutor())
+                .add(fileDownloadFlow)
+                .build();
+
+        return new FlowBuilder<Flow>("split-file-downloader-flow")
+                .start(parallelFlow)
+                .end();
     }
 
     /**
@@ -122,7 +132,9 @@ public class WorkerConfiguration {
     public Step fileDownloadStep() {
         SimpleStepBuilder simpleStepBuilder = new SimpleStepBuilder(new StepBuilder(WORKER_FILE_DOWNLOADER_STEP_NAME));
         // todo move chunk size to config
-        simpleStepBuilder.<Map, FileMeta>chunk(5).reader(fileStorageReader(null)).processor(fileStorageProcessor()).writer(fileStorageWriter());
+        simpleStepBuilder.<Map, FileMeta>chunk(5).reader(fileStorageReader(null))
+                .processor(fileStorageProcessor())
+                .writer(fileStorageWriter());
         simpleStepBuilder.repository(jobRepository);
         simpleStepBuilder.transactionManager(transactionManager);
         return simpleStepBuilder.build();
@@ -142,16 +154,21 @@ public class WorkerConfiguration {
         return new SimpleAsyncTaskExecutor();
     }
 
-    public ItemWriter<FileMeta> fileMetaWriter() {
-        return fileMetaWriter;
+    public AsyncItemWriter<FileMeta> fileMetaWriter() {
+        AsyncItemWriter<FileMeta> writer = new AsyncItemWriter<>();
+        writer.setDelegate(fileMetaWriter);
+        return writer;
     }
 
-    public ItemWriter<FileStorageInfo> fileStorageWriter() {
-        return fileStorageWriter;
+    public AsyncItemWriter<FileStorageInfo> fileStorageWriter() {
+        AsyncItemWriter<FileStorageInfo> writer = new AsyncItemWriter<>();
+        writer.setDelegate(fileStorageWriter);
+        return writer;
     }
 
-    public ItemProcessor<Map, FileStorageInfo> fileStorageProcessor() {
-        return new ItemProcessor<>() {
+    public AsyncItemProcessor<Map, FileStorageInfo> fileStorageProcessor() {
+        AsyncItemProcessor<Map, FileStorageInfo> processor = new AsyncItemProcessor<>();
+        processor.setDelegate(new ItemProcessor<>() {
             @SneakyThrows
             @Override
             public FileStorageInfo process(Map item) {
@@ -161,18 +178,23 @@ public class WorkerConfiguration {
                 final InputStream fileStream = drive.files().export(fileStorage.getFileId(), Constants.MIME_TYPE_TEXT_PLAIN).executeMediaAsInputStream();
                 return new FileStorageInfo.Builder().fileStream(fileStream).file(fileStorage).userId(fileStorage.getUserId()).build();
             }
-        };
+        });
+        processor.setTaskExecutor(new SimpleAsyncTaskExecutor());
+        return processor;
     }
 
-    public ItemProcessor<Map, FileMeta> fileMetaProcessor() {
-        return new ItemProcessor<>() {
+    public AsyncItemProcessor<Map, FileMeta> fileMetaProcessor() {
+        AsyncItemProcessor<Map, FileMeta> processor = new AsyncItemProcessor<>();
+        processor.setDelegate(new ItemProcessor<>() {
             @Override
             public FileMeta process(Map item) {
                 FileMeta fileMeta = new FileMeta.Builder().file(item).build();
                 logger.info("Transforming file meta for file " + fileMeta.getId());
                 return fileMeta;
             }
-        };
+        });
+        processor.setTaskExecutor(new SimpleAsyncTaskExecutor());
+        return processor;
     }
 
 
