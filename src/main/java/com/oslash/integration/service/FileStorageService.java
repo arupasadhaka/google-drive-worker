@@ -37,12 +37,12 @@ public class FileStorageService {
         String userId = fileStorageInfo.getUserId();
         String fileName = fileStorageInfo.getFile().getFileName();
         AmazonS3 storageService = integrationResolver().resolveStorage();
-        String bucketName = Constants.BUCKET_PREFIX + userId;
+        final String bucketName = (Constants.BUCKET_PREFIX + userId).replace("/", "");
         if (!storageService.doesBucketExist(bucketName)) {
             storageService.createBucket(bucketName);
             logger.info(String.format("created bucket with name %s for the user %s", bucketName, userId));
         }
-        logger.info(String.format("saved file %s for user %s in bucket id %", fileName, userId, bucketName));
+        logger.info(String.format("saved file %s for user %s in bucket id %s", fileName, userId, bucketName));
         PutObjectResult result = storageService.putObject(bucketName, fileName, fileStorageInfo.getFileStream(), new ObjectMetadata());
         // TODO get absolute URL from result with region
         fileStorageInfo.getFile().setSourceUrl(String.format("%s/%s", bucketName, fileName));

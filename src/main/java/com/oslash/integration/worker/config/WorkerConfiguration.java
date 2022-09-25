@@ -121,7 +121,8 @@ public class WorkerConfiguration {
 
     public Step fileDownloadStep() {
         SimpleStepBuilder simpleStepBuilder = new SimpleStepBuilder(new StepBuilder(WORKER_FILE_DOWNLOADER_STEP_NAME));
-        simpleStepBuilder.<Map, FileMeta>chunk(100).reader(fileStorageReader(null)).processor(fileStorageProcessor()).writer(fileStorageWriter());
+        // todo move chunk size to config
+        simpleStepBuilder.<Map, FileMeta>chunk(5).reader(fileStorageReader(null)).processor(fileStorageProcessor()).writer(fileStorageWriter());
         simpleStepBuilder.repository(jobRepository);
         simpleStepBuilder.transactionManager(transactionManager);
         return simpleStepBuilder.build();
@@ -129,7 +130,8 @@ public class WorkerConfiguration {
 
     public Step fileMetaSaveStep() {
         SimpleStepBuilder simpleStepBuilder = new SimpleStepBuilder(new StepBuilder(WORKER_FILE_META_STEP_NAME));
-        simpleStepBuilder.<Map, FileMeta>chunk(1).reader(fileMetaReader(null)).processor(fileMetaProcessor()).writer(fileMetaWriter());
+        // todo move chunk size to config
+        simpleStepBuilder.<Map, FileMeta>chunk(100).reader(fileMetaReader(null)).processor(fileMetaProcessor()).writer(fileMetaWriter());
         simpleStepBuilder.repository(jobRepository);
         simpleStepBuilder.transactionManager(transactionManager);
         return simpleStepBuilder.build();
