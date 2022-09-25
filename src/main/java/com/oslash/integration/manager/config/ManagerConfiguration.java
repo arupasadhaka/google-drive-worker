@@ -1,8 +1,6 @@
 package com.oslash.integration.manager.config;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.manager.reader.FilesPartitioner;
 import com.oslash.integration.models.User;
@@ -29,7 +27,6 @@ import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 
-import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
@@ -42,6 +39,7 @@ public class ManagerConfiguration {
     private AppConfiguration appConfiguration;
     @Autowired
     private JobBuilderFactory jobBuilderFactory;
+
     @Autowired
     private JobLauncher jobLauncher;
     @Autowired
@@ -85,12 +83,7 @@ public class ManagerConfiguration {
 
     public Step partitionerStep(User user) {
         // move grid size to config
-        return partitionStepBuilderFactory
-                .get("partitionerStep")
-                .partitioner(appConfiguration.getStepName(), partitioner(user))
-                .gridSize(partitionSize)
-                .outputChannel(requests())
-                .build();
+        return partitionStepBuilderFactory.get("partitionerStep").partitioner(Constants.WORKER_STEP_NAME, partitioner(user)).gridSize(partitionSize).outputChannel(requests()).build();
     }
 
     public void scheduleJobForUser(User user) {
@@ -115,15 +108,5 @@ public class ManagerConfiguration {
                 return null;
             });
         }
-    }
-
-    public abstract class JobExecutionMixin {
-        @JsonManagedReference
-        private Collection<StepExecution> stepExecutions;
-    }
-
-    public abstract class StepExecutionsMixin {
-        @JsonIgnore
-        private JobExecution jobExecution;
     }
 }

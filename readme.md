@@ -63,3 +63,7 @@ http://localhost/signup
 
 ### remote-chunking
 - https://frandorado.github.io/spring/2019/09/19/spring-batch-aws-series-chunking.html#:~:text=With%20Remote%20Chunking%20the%20data,be%20returned%20to%20the%20master.&text=Slave%20doesn't%20need%20database,This%20arrives%20through%20SQS%20messages.
+
+### que delete
+- aws --endpoint-url=http://localhost:4566 sqs delete-queue --queue-url=http://localhost:4566/000000000000/file-meta-simple-request-que
+- aws --endpoint-url=http://localhost:4566 sqs delete-queue --queue-url=http://localhost:4566/000000000000/file-meta-simple-reply-que 

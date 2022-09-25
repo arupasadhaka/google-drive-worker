@@ -1,13 +1,18 @@
 package com.oslash.integration.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.oslash.integration.manager.config.ManagerConfiguration;
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.StepExecution;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.integration.json.ObjectToJsonTransformer;
 import org.springframework.integration.support.json.Jackson2JsonObjectMapper;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -17,11 +22,9 @@ public class AppConfiguration {
     @Value("${app.sqs.que.request-name}")
     private String requestQueName;
 
+    // can be used in remote chunking
     @Value("${app.sqs.que.reply-name}")
     private String replyQueName;
-
-    @Value("${app.batch.step.name}")
-    private String stepName;
 
     @Value("${app.files.mime-type}")
     private String mimeType;
@@ -29,6 +32,15 @@ public class AppConfiguration {
     @Bean
     public ObjectToJsonTransformer objectToJsonTransformer() {
         return new ObjectToJsonTransformer(jacksonJsonBuilder());
+    }
+
+    @Bean
+    public Jackson2ObjectMapperBuilder jacksonBuilder() {
+        Jackson2ObjectMapperBuilder b = new Jackson2ObjectMapperBuilder();
+        b.indentOutput(true)
+                .mixIn(org.springframework.batch.core.StepExecution.class, StepExecutionsMixin.class)
+                .mixIn(org.springframework.batch.core.JobExecution.class, JobExecutionMixin.class);
+        return b;
     }
 
     /**
@@ -44,8 +56,8 @@ public class AppConfiguration {
         Jackson2JsonObjectMapper b = new Jackson2JsonObjectMapper();
         ObjectMapper mapper = b.getObjectMapper();
         Map<Class<?>, Class<?>> mixIns = new LinkedHashMap<>();
-        mixIns.put(org.springframework.batch.core.StepExecution.class, ManagerConfiguration.StepExecutionsMixin.class);
-        mixIns.put(org.springframework.batch.core.JobExecution.class, ManagerConfiguration.JobExecutionMixin.class);
+        mixIns.put(org.springframework.batch.core.StepExecution.class, StepExecutionsMixin.class);
+        mixIns.put(org.springframework.batch.core.JobExecution.class, JobExecutionMixin.class);
         mixIns.forEach(mapper::addMixIn);
         return b;
     }
@@ -56,14 +68,6 @@ public class AppConfiguration {
 
     public void setRequestQueName(String requestQueName) {
         this.requestQueName = requestQueName;
-    }
-
-    public String getStepName() {
-        return stepName;
-    }
-
-    public void setStepName(String stepName) {
-        this.stepName = stepName;
     }
 
     public String getReplyQueName() {
@@ -80,5 +84,15 @@ public class AppConfiguration {
 
     public void setMimeType(String mimeType) {
         this.mimeType = mimeType;
+    }
+
+    public abstract class JobExecutionMixin {
+        @JsonManagedReference
+        private Collection<StepExecution> stepExecutions;
+    }
+
+    public abstract class StepExecutionsMixin {
+        @JsonIgnore
+        private JobExecution jobExecution;
     }
 }
