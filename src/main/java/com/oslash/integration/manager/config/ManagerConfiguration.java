@@ -87,7 +87,7 @@ public class ManagerConfiguration {
         // move grid size to config
         return partitionStepBuilderFactory
                 .get("partitionerStep")
-                .partitioner(appConfiguration.getStepName(), partitioner(user))
+                .partitioner(Constants.WORKER_STEP_NAME, partitioner(user))
                 .gridSize(partitionSize)
                 .outputChannel(requests())
                 .build();

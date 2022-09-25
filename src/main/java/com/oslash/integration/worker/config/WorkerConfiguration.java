@@ -3,6 +3,7 @@ package com.oslash.integration.worker.config;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.models.FileMeta;
+import com.oslash.integration.utils.Constants;
 import com.oslash.integration.worker.MessageTransformer;
 import com.oslash.integration.worker.writer.FileMetaWriter;
 import org.springframework.batch.core.Step;
@@ -55,6 +56,7 @@ public class WorkerConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(value = ObjectNamingStrategy.class, search = SearchStrategy.CURRENT)
     public IntegrationFlow outboundFlow(@Qualifier("amazonSQSReplyAsync") AmazonSQSAsync sqsAsync) {
         SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(sqsAsync);
         sqsMessageHandler.setQueue(appConfiguration.getReplyQueName());
@@ -81,7 +83,7 @@ public class WorkerConfiguration {
 
     @Bean(name = "simpleStep")
     public Step simpleStep() {
-        return stepBuilderFactory.get(appConfiguration.getStepName())
+        return stepBuilderFactory.get(Constants.WORKER_STEP_NAME)
                 .inputChannel(requests())
                 .<Map, FileMeta>chunk(100)
                 .reader(itemReader(null))

@@ -44,8 +44,6 @@ app:
       reply-name: file-meta-simple-reply-que
   batch:
     partition-size: 100
-    step:
-      name: partition-file-meta
   drive:
     mime-types: "application/octet-stream"
 

@@ -17,11 +17,9 @@ public class AppConfiguration {
     @Value("${app.sqs.que.request-name}")
     private String requestQueName;
 
+    // can be used in remote chunking
     @Value("${app.sqs.que.reply-name}")
     private String replyQueName;
-
-    @Value("${app.batch.step.name}")
-    private String stepName;
 
     @Value("${app.files.mime-type}")
     private String mimeType;
@@ -56,14 +54,6 @@ public class AppConfiguration {
 
     public void setRequestQueName(String requestQueName) {
         this.requestQueName = requestQueName;
-    }
-
-    public String getStepName() {
-        return stepName;
-    }
-
-    public void setStepName(String stepName) {
-        this.stepName = stepName;
     }
 
     public String getReplyQueName() {
