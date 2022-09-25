@@ -1,10 +1,9 @@
-package com.oslash.integration.worker;
+package com.oslash.integration.worker.config;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oslash.integration.config.AppConfiguration;
-import com.oslash.integration.manager.ManagerConfiguration;
 import com.oslash.integration.models.FileMeta;
+import com.oslash.integration.worker.MessageTransformer;
 import com.oslash.integration.worker.writer.FileMetaWriter;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -25,12 +24,10 @@ import org.springframework.integration.aws.outbound.SqsMessageHandler;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
-import org.springframework.integration.support.json.Jackson2JsonObjectMapper;
 import org.springframework.integration.transformer.Transformer;
 import org.springframework.jmx.export.naming.ObjectNamingStrategy;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 

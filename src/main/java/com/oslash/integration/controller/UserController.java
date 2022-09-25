@@ -5,7 +5,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.services.people.v1.model.Person;
 import com.google.common.base.Preconditions;
 import com.oslash.integration.config.AppConfiguration;
-import com.oslash.integration.manager.ManagerConfiguration;
+import com.oslash.integration.manager.config.ManagerConfiguration;
 import com.oslash.integration.models.User;
 import io.micrometer.core.instrument.util.StringUtils;
 import org.slf4j.Logger;

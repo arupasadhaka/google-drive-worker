@@ -1,9 +1,10 @@
-package com.oslash.integration.manager;
+package com.oslash.integration.manager.config;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.oslash.integration.config.AppConfiguration;
+import com.oslash.integration.manager.reader.FilesPartitioner;
 import com.oslash.integration.models.User;
 import com.oslash.integration.utils.Constants;
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.integration.partition.RemotePartitioningManagerStepBuilderFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -34,6 +36,7 @@ import java.util.concurrent.CompletableFuture;
 @Configuration
 @Profile("manager")
 public class ManagerConfiguration {
+
     private final Logger logger = LoggerFactory.getLogger(ManagerConfiguration.class);
     @Autowired
     private AppConfiguration appConfiguration;
@@ -53,6 +56,9 @@ public class ManagerConfiguration {
     public QueueChannel replies() {
         return new QueueChannel();
     }
+
+    @Value("${app.batch.partition-size}")
+    private Integer partitionSize;
 
     @Bean(name = "outboundFlow")
     public IntegrationFlow outboundFlow(@Qualifier("amazonSQSRequestAsync") AmazonSQSAsync sqsAsync) {
@@ -79,7 +85,13 @@ public class ManagerConfiguration {
     }
 
     public Step partitionerStep(User user) {
-        return partitionStepBuilderFactory.get("partitionerStep").partitioner(appConfiguration.getStepName(), partitioner(user)).outputChannel(requests()).build();
+        // move grid size to config
+        return partitionStepBuilderFactory
+                .get("partitionerStep")
+                .partitioner(appConfiguration.getStepName(), partitioner(user))
+                .gridSize(partitionSize)
+                .outputChannel(requests())
+                .build();
     }
 
     public void scheduleJobForUser(User user) {

@@ -1,7 +1,7 @@
 package com.oslash.integration.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.oslash.integration.manager.ManagerConfiguration;
+import com.oslash.integration.manager.config.ManagerConfiguration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

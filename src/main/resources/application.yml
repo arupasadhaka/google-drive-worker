@@ -42,8 +42,8 @@ app:
       reply-name: file-meta-simple-reply-que
   batch:
     step:
-      name: simpleStep
-
+      name: partition-file-meta
+      partition-size: 100
 aws:
   sqs:
     endpoint: http://localhost:4566
