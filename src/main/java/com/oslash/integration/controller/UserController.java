@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import static com.oslash.integration.resolver.GoogleApiResolver.apiResolver;
+import static com.oslash.integration.resolver.IntegrationResolver.integrationResolver;
 
 
 /**
@@ -46,8 +46,8 @@ public class UserController {
 
     @GetMapping(value = {"/signup"})
     public void signUp(HttpServletResponse response) throws Exception {
-        GoogleAuthorizationCodeRequestUrl url = apiResolver().authorizationCodeFlow().newAuthorizationUrl();
-        String redirectURL = url.setRedirectUri(apiResolver().callBackUrl()).setAccessType(apiResolver().accessType()).build();
+        GoogleAuthorizationCodeRequestUrl url = integrationResolver().authorizationCodeFlow().newAuthorizationUrl();
+        String redirectURL = url.setRedirectUri(integrationResolver().callBackUrl()).setAccessType(integrationResolver().accessType()).build();
         response.sendRedirect(redirectURL);
     }
 
@@ -55,9 +55,9 @@ public class UserController {
     public @ResponseBody Person oAuthCallback(HttpServletRequest request, HttpServletResponse response) throws Exception {
         String authCode = request.getParameter("code");
         Preconditions.checkArgument(StringUtils.isNotEmpty(authCode), "Invalid auth code");
-        GoogleTokenResponse tokenResponse = apiResolver().authorizationCodeFlow().newTokenRequest(authCode).setRedirectUri(apiResolver().callBackUrl()).execute();
-        Person person = apiResolver().getPerson(tokenResponse);
-        User userDetails = apiResolver().saveUserDetails(tokenResponse, person);
+        GoogleTokenResponse tokenResponse = integrationResolver().authorizationCodeFlow().newTokenRequest(authCode).setRedirectUri(integrationResolver().callBackUrl()).execute();
+        Person person = integrationResolver().getPerson(tokenResponse);
+        User userDetails = integrationResolver().saveUserDetails(tokenResponse, person);
         manager.scheduleJobForUser(userDetails);
         return person;
     }

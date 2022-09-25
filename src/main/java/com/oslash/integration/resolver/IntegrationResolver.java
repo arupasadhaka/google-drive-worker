@@ -1,5 +1,6 @@
 package com.oslash.integration.resolver;
 
+import com.amazonaws.services.s3.AmazonS3;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
@@ -8,7 +9,8 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.store.MemoryDataStoreFactory;
+import com.google.api.client.util.store.FileDataStoreFactory;
+import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.people.v1.PeopleService;
 import com.google.api.services.people.v1.PeopleServiceScopes;
@@ -33,12 +35,16 @@ import java.util.List;
 
 // implement interface and expose static methods
 @Component
-public class GoogleApiResolver {
-    private static GoogleApiResolver INSTANCE;
+public class IntegrationResolver {
+    private static IntegrationResolver INSTANCE;
     public final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     public final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
-    private final Logger logger = LoggerFactory.getLogger(GoogleApiResolver.class);
+    private final Logger logger = LoggerFactory.getLogger(IntegrationResolver.class);
     private final List<String> SCOPES = new ArrayList<String>();
+
+    @Value("${google.credentials.folder.path}")
+    private Resource credentialsFile;
+
     @Value("${google.app.access.type}")
     private String accessType;
     @Value("${spring.application.name}")
@@ -51,11 +57,28 @@ public class GoogleApiResolver {
     private ApplicationContext appContext;
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private AmazonS3 amazonS3;
+
     private GoogleAuthorizationCodeFlow authorizationCodeFlow;
 
-    public static GoogleApiResolver apiResolver() {
+    public static IntegrationResolver integrationResolver() {
         assert INSTANCE != null : "driver not initialized";
         return INSTANCE;
+    }
+
+    public static Drive resolveGDrive(String userId) throws IOException {
+        Credential cred = integrationResolver().authorizationCodeFlow().loadCredential(userId);
+        return new Drive.Builder(integrationResolver().HTTP_TRANSPORT, integrationResolver().JSON_FACTORY, cred).setApplicationName("appName").build();
+    }
+
+    public static IntegrationResolver getInstance() {
+        return INSTANCE;
+    }
+
+    public static AmazonS3 resolveStorage() {
+        return getInstance().amazonS3;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -79,14 +102,17 @@ public class GoogleApiResolver {
     }
 
     private PeopleService peopleService() throws IOException {
-        Credential credential = apiResolver().authorizationCodeFlow().loadCredential("USER_IDENTIFIER_KEY");
+        Credential credential = integrationResolver().authorizationCodeFlow().loadCredential(null);
         return new PeopleService.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName(appName).build();
     }
 
     private void initializeAuthFlow() throws IOException {
         GoogleClientSecrets secrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(appSecretKey.getInputStream()));
         logger.info("connecting google drive auth flow");
-        authorizationCodeFlow = new GoogleAuthorizationCodeFlow.Builder(HTTP_TRANSPORT, JSON_FACTORY, secrets, SCOPES).setDataStoreFactory(MemoryDataStoreFactory.getDefaultInstance()).build();
+        authorizationCodeFlow = new GoogleAuthorizationCodeFlow.Builder(HTTP_TRANSPORT, JSON_FACTORY, secrets, SCOPES)
+                // setting this to share credentials across manager and slave, need to replace this with custom cached DataStoreFactory
+                .setDataStoreFactory(new FileDataStoreFactory(credentialsFile.getFile()))
+                .build();
         logger.info("connected to google drive auth flow");
     }
 

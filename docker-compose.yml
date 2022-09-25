@@ -26,7 +26,7 @@ services:
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=sqs
+      - SERVICES=sqs,s3
       - DOCKER_HOST=unix:///var/run/docker.sock
       - DEFAULT_REGION=us-east-1
       - HOSTNAME_EXTERNAL=localhost

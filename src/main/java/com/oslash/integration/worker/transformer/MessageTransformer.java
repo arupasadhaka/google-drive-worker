@@ -1,4 +1,4 @@
-package com.oslash.integration.worker;
+package com.oslash.integration.worker.transformer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

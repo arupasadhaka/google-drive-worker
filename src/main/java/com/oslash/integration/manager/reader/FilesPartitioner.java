@@ -1,6 +1,5 @@
 package com.oslash.integration.manager.reader;
 
-import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
@@ -20,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.oslash.integration.resolver.GoogleApiResolver.apiResolver;
+import static com.oslash.integration.resolver.IntegrationResolver.integrationResolver;
 
 public class FilesPartitioner extends MultiResourcePartitioner {
     public static final String PARTITION_PREFIX = "partition";
@@ -39,8 +38,7 @@ public class FilesPartitioner extends MultiResourcePartitioner {
 
     @SneakyThrows
     private void init(User user) {
-        Credential cred = apiResolver().authorizationCodeFlow().loadCredential(user.getId());
-        this.drive = new Drive.Builder(apiResolver().HTTP_TRANSPORT, apiResolver().JSON_FACTORY, cred).setApplicationName("appName").build();
+        this.drive = integrationResolver().resolveGDrive(user.getId());
     }
 
 
@@ -89,6 +87,7 @@ public class FilesPartitioner extends MultiResourcePartitioner {
             File file = fileList.getFiles().get(i);
             Map item = new HashMap();
             item.put(Constants.FILE_ID, file.getId());
+            item.put(Constants.FILE_NAME, file.getName());
             item.put(Constants.USER_ID, user.getId());
             item.put(Constants.MIME_TYPE, file.getMimeType());
             filesMeta.add(item);

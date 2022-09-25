@@ -67,3 +67,10 @@ http://localhost/signup
 ### que delete
 - aws --endpoint-url=http://localhost:4566 sqs delete-queue --queue-url=http://localhost:4566/000000000000/file-meta-simple-request-que
 - aws --endpoint-url=http://localhost:4566 sqs delete-queue --queue-url=http://localhost:4566/000000000000/file-meta-simple-reply-que 
+
+## s3 
+- aws s3 mb s3://oslash --endpoint-url http://localhost:4566
+- aws --endpoint-url=http://localhost:4566 --region=us-east-1 s3 ls
+
+## dev Setup
+- pip install awscli-local

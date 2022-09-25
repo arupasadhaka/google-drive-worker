@@ -53,6 +53,8 @@ aws:
   region: us-east-1
   accessKey: ''
   secretKey: ''
+  s3:
+    endpoint: http://localhost:4566
 
 google:
   app:

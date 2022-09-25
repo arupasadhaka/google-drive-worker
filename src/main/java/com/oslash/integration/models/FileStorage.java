@@ -25,6 +25,7 @@ public class FileStorage {
     private String sourceUrl;
     private String bucket;
     private String mimeType;
+    private String fileName;
 
     private FileStorage(Builder builder) {
         setId(builder.id);
@@ -33,11 +34,14 @@ public class FileStorage {
         setSourceUrl(builder.sourceUrl);
         setBucket(builder.bucket);
         setMimeType(builder.mimeType);
+        setFileName(builder.fileName);
     }
 
     public static final class Builder {
         private String id;
         private String fileId;
+
+        private String fileName;
         private String userId;
         private String sourceUrl;
         private String bucket;
@@ -78,7 +82,10 @@ public class FileStorage {
 
         public Builder file(Map item) {
             if (nonNull(item.get(Constants.FILE_ID))) {
-                this.id = String.valueOf(item.get(Constants.FILE_ID));
+                this.fileId = String.valueOf(item.get(Constants.FILE_ID));
+            }
+            if (nonNull(item.get(Constants.FILE_NAME))) {
+                this.fileName = String.valueOf(item.get(Constants.FILE_NAME));
             }
             if (nonNull(item.get(Constants.MIME_TYPE))) {
                 this.mimeType = String.valueOf(item.get(Constants.MIME_TYPE));
