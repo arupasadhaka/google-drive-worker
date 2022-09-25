@@ -46,6 +46,8 @@ public class ManagerConfiguration {
     private JobLauncher jobLauncher;
     @Autowired
     private RemotePartitioningManagerStepBuilderFactory partitionStepBuilderFactory;
+    @Value("${app.batch.partition-size}")
+    private Integer partitionSize;
 
     @Bean
     public DirectChannel requests() {
@@ -56,9 +58,6 @@ public class ManagerConfiguration {
     public QueueChannel replies() {
         return new QueueChannel();
     }
-
-    @Value("${app.batch.partition-size}")
-    private Integer partitionSize;
 
     @Bean(name = "outboundFlow")
     public IntegrationFlow outboundFlow(@Qualifier("amazonSQSRequestAsync") AmazonSQSAsync sqsAsync) {
@@ -81,7 +80,7 @@ public class ManagerConfiguration {
     }
 
     public FilesPartitioner partitioner(User user) {
-        return new FilesPartitioner(user);
+        return new FilesPartitioner(user, appConfiguration);
     }
 
     public Step partitionerStep(User user) {

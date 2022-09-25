@@ -49,9 +49,17 @@ http://localhost/signup
 - https://github.com/googleworkspace/java-samples
 - https://github.com/localstack/localstack
 
-### mongo reactive
+### reactive
 - https://www.baeldung.com/spring-data-mongodb-reactive
+- https://docs.spring.io/spring-integration/docs/current/reference/html/reactive-streams.html#reactive-streams
+
 
 ### spring-batch
 - https://docs.spring.io/spring-batch/docs/current/reference/html/spring-batch-integration.html#remote-chunking
 - https://github.com/spring-projects/spring-batch/issues/1488
+- https://stackoverflow.com/questions/30786382/spring-batch-difference-between-multithreading-vs-partitioning
+- https://frandorado.github.io/spring/2019/10/11/spring-batch-aws-series-partitioning.html
+- https://github.com/frandorado/spring-projects/tree/master/spring-batch-aws-integration
+
+### remote-chunking
+- https://frandorado.github.io/spring/2019/09/19/spring-batch-aws-series-chunking.html#:~:text=With%20Remote%20Chunking%20the%20data,be%20returned%20to%20the%20master.&text=Slave%20doesn't%20need%20database,This%20arrives%20through%20SQS%20messages.

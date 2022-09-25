@@ -36,14 +36,19 @@ spring:
       enabled: false # disable on startup
 
 app:
+  files:
+    mime-type: application/vnd.google-apps.document
   sqs:
     que:
       request-name: file-meta-simple-request-que
       reply-name: file-meta-simple-reply-que
   batch:
+    partition-size: 100
     step:
       name: partition-file-meta
-      partition-size: 100
+  drive:
+    mime-types: "application/octet-stream"
+
 aws:
   sqs:
     endpoint: http://localhost:4566

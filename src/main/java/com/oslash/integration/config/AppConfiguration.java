@@ -23,6 +23,9 @@ public class AppConfiguration {
     @Value("${app.batch.step.name}")
     private String stepName;
 
+    @Value("${app.files.mime-type}")
+    private String mimeType;
+
     @Bean
     public ObjectToJsonTransformer objectToJsonTransformer() {
         return new ObjectToJsonTransformer(jacksonJsonBuilder());
@@ -69,5 +72,13 @@ public class AppConfiguration {
 
     public void setReplyQueName(String replyQueName) {
         this.replyQueName = replyQueName;
+    }
+
+    public String getMimeType() {
+        return mimeType;
+    }
+
+    public void setMimeType(String mimeType) {
+        this.mimeType = mimeType;
     }
 }

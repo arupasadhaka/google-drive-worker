@@ -4,8 +4,10 @@ import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.models.User;
 import com.oslash.integration.utils.Constants;
+import lombok.SneakyThrows;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,19 +25,21 @@ import static com.oslash.integration.resolver.GoogleApiResolver.apiResolver;
 public class FilesPartitioner extends MultiResourcePartitioner {
     public static final String PARTITION_PREFIX = "partition";
     private final User user;
+    private final AppConfiguration appConfiguration;
     Logger logger = LoggerFactory.getLogger(getClass());
     private String nextPageToken;
     private Drive drive;
     private boolean reachedEnd;
 
-    public FilesPartitioner(User user) {
+    public FilesPartitioner(User user, AppConfiguration appConfiguration) {
+        this.appConfiguration = appConfiguration;
         this.user = user;
-        Credential cred = null;
-        try {
-            cred = apiResolver().authorizationCodeFlow().loadCredential(user.getId());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        init(user);
+    }
+
+    @SneakyThrows
+    private void init(User user) {
+        Credential cred = apiResolver().authorizationCodeFlow().loadCredential(user.getId());
         this.drive = new Drive.Builder(apiResolver().HTTP_TRANSPORT, apiResolver().JSON_FACTORY, cred).setApplicationName("appName").build();
     }
 
@@ -46,7 +50,15 @@ public class FilesPartitioner extends MultiResourcePartitioner {
         Map<String, ExecutionContext> partitions = new HashMap<>();
         while (!reachedEnd) {
             try {
-                FileList fileList = drive.files().list().setPageSize(gridSize).setPageToken(nextPageToken).setFields("files(id,name,thumbnailLink,mimeType),nextPageToken").execute();
+                FileList fileList = drive.files()
+                        .list()
+                        // selecting only documents
+                        .setQ(String.format("%s='%s'", Constants.MIME_TYPE, appConfiguration.getMimeType()))
+                        .setSpaces(Constants.DRIVE_SPACE)
+                        .setPageSize(gridSize)
+                        .setPageToken(nextPageToken)
+                        .setFields("files(id,name,thumbnailLink,mimeType),nextPageToken")
+                        .execute();
                 if (fileList.size() > 0) {
                     ExecutionContext executionContext = new ExecutionContext();
                     executionContext.put("data", getPartitionMetaData(fileList));
