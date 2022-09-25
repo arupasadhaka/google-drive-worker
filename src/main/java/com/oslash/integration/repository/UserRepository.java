@@ -7,7 +7,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Repository
-public interface UserRepository  extends ReactiveCrudRepository<User, String> {
+public interface UserRepository extends ReactiveCrudRepository<User, String> {
     Flux<User> findAllByEmail(String value);
+
     Mono<User> findFirstByRefreshToken(Mono<String> refreshToken);
 }

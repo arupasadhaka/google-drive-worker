@@ -30,7 +30,7 @@ public class MessageQueConfiguration {
     @Value("${aws.secretKey}")
     String secretKey;
 
-    @Bean(name="amazonSQSRequestAsync")
+    @Bean()
     public AmazonSQSAsync amazonSQSRequestAsync() {
         final AwsClientBuilder.EndpointConfiguration endpointConfiguration =
             new AwsClientBuilder.EndpointConfiguration(endPoint, awsRegion);
@@ -42,22 +42,6 @@ public class MessageQueConfiguration {
         final ListQueuesResult listQueuesResult = sqsAsync.listQueues(appConfiguration.getRequestQueName());
         if (listQueuesResult.getQueueUrls().isEmpty()) {
             sqsAsync.createQueueAsync(appConfiguration.getRequestQueName());
-        }
-        return sqsAsync;
-    }
-
-    @Bean(name="amazonSQSReplyAsync")
-    public AmazonSQSAsync amazonSQSReplyAsync() {
-        final AwsClientBuilder.EndpointConfiguration endpointConfiguration =
-                new AwsClientBuilder.EndpointConfiguration(endPoint, awsRegion);
-        final AmazonSQSAsync sqsAsync = AmazonSQSAsyncClientBuilder
-                .standard()
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-                .withEndpointConfiguration(endpointConfiguration)
-                .build();
-        final ListQueuesResult listQueuesResult = sqsAsync.listQueues(appConfiguration.getReplyQueName());
-        if (listQueuesResult.getQueueUrls().isEmpty()) {
-            sqsAsync.createQueueAsync(appConfiguration.getReplyQueName());
         }
         return sqsAsync;
     }

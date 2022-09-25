@@ -1,4 +1,4 @@
-package com.oslash.integration.manager;
+package com.oslash.integration.manager.steps.reader;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.services.drive.Drive;
@@ -6,7 +6,6 @@ import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 import com.oslash.integration.models.FileMeta;
 import com.oslash.integration.utils.Constants;
-import lombok.SneakyThrows;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +22,7 @@ import java.util.List;
 
 import static com.oslash.integration.resolver.GoogleApiResolver.apiResolver;
 
-public class FilesChunkReader<T> implements ItemReader, StepExecutionListener {
+public class FileMetaReader implements ItemReader, StepExecutionListener {
 
     Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -35,12 +34,12 @@ public class FilesChunkReader<T> implements ItemReader, StepExecutionListener {
 
     private List<File> files = new ArrayList();
 
-    public FilesChunkReader(String userId) {
+    public FileMetaReader(String userId) {
         this.userId = userId;
         init(userId);
     }
 
-//    @SneakyThrows
+    //    @SneakyThrows
     public void init(String userId) {
         final Credential credential;
         try {
@@ -88,7 +87,7 @@ public class FilesChunkReader<T> implements ItemReader, StepExecutionListener {
         return checkpointInfo;
     }
 
-//    @SneakyThrows
+    //    @SneakyThrows
     @Override
     public FileMeta read() {
         if (!reachedEnd && files.isEmpty()) {
