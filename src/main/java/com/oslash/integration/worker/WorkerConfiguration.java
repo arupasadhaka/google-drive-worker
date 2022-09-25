@@ -7,7 +7,6 @@ import com.oslash.integration.manager.ManagerConfiguration;
 import com.oslash.integration.models.FileMeta;
 import com.oslash.integration.worker.writer.FileMetaWriter;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.integration.partition.RemotePartitioningWorkerStepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
@@ -26,12 +25,10 @@ import org.springframework.integration.aws.outbound.SqsMessageHandler;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
-import org.springframework.integration.json.ObjectToJsonTransformer;
 import org.springframework.integration.support.json.Jackson2JsonObjectMapper;
 import org.springframework.integration.transformer.Transformer;
 import org.springframework.jmx.export.naming.ObjectNamingStrategy;
 
-import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,13 +45,7 @@ public class WorkerConfiguration {
     FileMetaWriter fileMetaWriter;
 
     @Autowired
-    private JobBuilderFactory jobBuilderFactory;
-    
-    @Autowired
     private RemotePartitioningWorkerStepBuilderFactory stepBuilderFactory;
-
-    @Autowired
-    private DataSource dataSource;
 
     @Bean
     @ConditionalOnMissingBean(value = ObjectNamingStrategy.class, search = SearchStrategy.CURRENT)
@@ -71,34 +62,11 @@ public class WorkerConfiguration {
         SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(sqsAsync);
         sqsMessageHandler.setQueue(appConfiguration.getReplyQueName());
         return IntegrationFlows.from(replies())
-                .transform(objectToJsonTransformer())
+                .transform(appConfiguration.objectToJsonTransformer())
                 .log()
                 .handle(sqsMessageHandler)
                 .get();
     }
-
-    /**
-     *
-     * issue: https://github.com/spring-projects/spring-batch/issues/1488#issuecomment-566278703
-     * org.springframework.integration.json.ObjectToJsonTransformer#jsonObjectMapper
-     * @return
-     */
-    @Bean
-    public Jackson2JsonObjectMapper jacksonJsonBuilder() {
-        Jackson2JsonObjectMapper b = new Jackson2JsonObjectMapper();
-        ObjectMapper mapper = b.getObjectMapper();
-        Map<Class<?>, Class<?>> mixIns = new LinkedHashMap<>();
-        mixIns.put(org.springframework.batch.core.StepExecution.class, ManagerConfiguration.StepExecutionsMixin.class);
-        mixIns.put(org.springframework.batch.core.JobExecution.class, ManagerConfiguration.JobExecutionMixin.class);
-        mixIns.forEach(mapper::addMixIn);
-        return b;
-    }
-
-    @Bean
-    public ObjectToJsonTransformer objectToJsonTransformer() {
-        return new ObjectToJsonTransformer(jacksonJsonBuilder());
-    }
-
     @Bean
     public Transformer messageTransformer() {
         return new MessageTransformer();
