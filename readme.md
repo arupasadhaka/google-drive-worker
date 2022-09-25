@@ -55,3 +55,6 @@ http://localhost/signup
 ### spring-batch
 - https://docs.spring.io/spring-batch/docs/current/reference/html/spring-batch-integration.html#remote-chunking
 - https://github.com/spring-projects/spring-batch/issues/1488
+- https://arnoldgalovics.com/spring-batch-remote-partitioning-aws-sqs
+- https://frandorado.github.io/spring/2019/07/29/spring-batch-aws-series-introduction.html
+- https://frandorado.github.io/spring/2019/09/19/spring-batch-aws-series-chunking.html#:~:text=With%20Remote%20Chunking%20the%20data,be%20returned%20to%20the%20master.&text=Slave%20doesn't%20need%20database,This%20arrives%20through%20SQS%20messages.
