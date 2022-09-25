@@ -69,7 +69,7 @@ public class ManagerConfiguration {
     @Bean(name = "inboundFlow")
     public IntegrationFlow inboundFlow(@Qualifier("amazonSQSReplyAsync") AmazonSQSAsync sqsAsync) {
         SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(sqsAsync);
-        sqsMessageHandler.setQueue(appConfiguration.getRequestQueName());
+        sqsMessageHandler.setQueue(appConfiguration.getReplyQueName());
         return IntegrationFlows.from(replies()).transform(appConfiguration.objectToJsonTransformer()).log().handle(sqsMessageHandler).get();
     }
 
