@@ -125,6 +125,7 @@ public class ManagerConfiguration {
 
     // read - process and write will be made in slave
     public Job remotePartitionJob(User user) {
+        // TODO: remove - date and   check if job is failed and restart
         return jobBuilderFactory.get(String.format("%s-%s-%s", "partitioningJob", user.getId(), new Date().getTime()))
             .start(partitionerStep(user))
             .incrementer(new RunIdIncrementer())
@@ -170,7 +171,7 @@ public class ManagerConfiguration {
             completableFuture.completeAsync(() -> {
                 try {
                     JobParameters params = new JobParametersBuilder().addString(Constants.USER_ID, user.getId()).toJobParameters();
-                     Job userJob = remotePartitionJob(user);
+                    Job userJob = remotePartitionJob(user);
 //                    Job userJob = simpleChunkJob(user);
                     jobLauncher.run(userJob, params);
                 } catch (JobExecutionAlreadyRunningException ex) {

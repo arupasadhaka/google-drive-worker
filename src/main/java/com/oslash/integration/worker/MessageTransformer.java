@@ -8,7 +8,7 @@ import org.springframework.messaging.Message;
 
 import java.util.Map;
 
-public class MessageTransformerTransformer extends AbstractTransformer {
+public class MessageTransformer extends AbstractTransformer {
     @Override
     protected Object doTransform(Message<?> message) {
         Map map = null;

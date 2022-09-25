@@ -1,7 +1,9 @@
 package com.oslash.integration.worker;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oslash.integration.config.AppConfiguration;
+import com.oslash.integration.manager.ManagerConfiguration;
 import com.oslash.integration.models.FileMeta;
 import com.oslash.integration.worker.writer.FileMetaWriter;
 import org.springframework.batch.core.Step;
@@ -20,15 +22,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.integration.aws.inbound.SqsMessageDrivenChannelAdapter;
+import org.springframework.integration.aws.outbound.SqsMessageHandler;
 import org.springframework.integration.channel.DirectChannel;
-import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
+import org.springframework.integration.json.ObjectToJsonTransformer;
+import org.springframework.integration.support.json.Jackson2JsonObjectMapper;
 import org.springframework.integration.transformer.Transformer;
 import org.springframework.jmx.export.naming.ObjectNamingStrategy;
 
 import javax.sql.DataSource;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +49,7 @@ public class WorkerConfiguration {
 
     @Autowired
     private JobBuilderFactory jobBuilderFactory;
+    
     @Autowired
     private RemotePartitioningWorkerStepBuilderFactory stepBuilderFactory;
 
@@ -60,24 +66,47 @@ public class WorkerConfiguration {
                 .get();
     }
 
-//    @Bean
-//    @ConditionalOnMissingBean(value = ObjectNamingStrategy.class, search = SearchStrategy.CURRENT)
-    public IntegrationFlow outboundFlow(AmazonSQSAsync sqsAsync) {
-        SqsMessageDrivenChannelAdapter adapter = new SqsMessageDrivenChannelAdapter(sqsAsync, appConfiguration.getRequestQueName());
-        return IntegrationFlows.from(adapter)
-                .transform(messageTransformer())
-                .channel(replies())
+    @Bean
+    public IntegrationFlow outboundFlow(@Qualifier("amazonSQSReplyAsync") AmazonSQSAsync sqsAsync) {
+        SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(sqsAsync);
+        sqsMessageHandler.setQueue(appConfiguration.getReplyQueName());
+        return IntegrationFlows.from(replies())
+                .transform(objectToJsonTransformer())
+                .log()
+                .handle(sqsMessageHandler)
                 .get();
+    }
+
+    /**
+     *
+     * issue: https://github.com/spring-projects/spring-batch/issues/1488#issuecomment-566278703
+     * org.springframework.integration.json.ObjectToJsonTransformer#jsonObjectMapper
+     * @return
+     */
+    @Bean
+    public Jackson2JsonObjectMapper jacksonJsonBuilder() {
+        Jackson2JsonObjectMapper b = new Jackson2JsonObjectMapper();
+        ObjectMapper mapper = b.getObjectMapper();
+        Map<Class<?>, Class<?>> mixIns = new LinkedHashMap<>();
+        mixIns.put(org.springframework.batch.core.StepExecution.class, ManagerConfiguration.StepExecutionsMixin.class);
+        mixIns.put(org.springframework.batch.core.JobExecution.class, ManagerConfiguration.JobExecutionMixin.class);
+        mixIns.forEach(mapper::addMixIn);
+        return b;
+    }
+
+    @Bean
+    public ObjectToJsonTransformer objectToJsonTransformer() {
+        return new ObjectToJsonTransformer(jacksonJsonBuilder());
     }
 
     @Bean
     public Transformer messageTransformer() {
-        return new MessageTransformerTransformer();
+        return new MessageTransformer();
     }
 
     @Bean
-    public QueueChannel requests() {
-        return new QueueChannel();
+    public DirectChannel requests() {
+        return new DirectChannel();
     }
 
     @Bean
