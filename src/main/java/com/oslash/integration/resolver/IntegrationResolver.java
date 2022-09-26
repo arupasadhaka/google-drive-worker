@@ -12,6 +12,8 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
+import com.google.api.services.drive.model.Channel;
+import com.google.api.services.drive.model.StartPageToken;
 import com.google.api.services.people.v1.PeopleService;
 import com.google.api.services.people.v1.PeopleServiceScopes;
 import com.google.api.services.people.v1.model.Person;
@@ -33,6 +35,7 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -50,12 +53,18 @@ public class IntegrationResolver {
      * The Http transport.
      */
     public final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
-    private final Logger logger = LoggerFactory.getLogger(IntegrationResolver.class);
+    private static final Logger logger = LoggerFactory.getLogger(IntegrationResolver.class);
     private final List<String> SCOPES = new ArrayList<String>();
     @Autowired
     private Environment environment;
     @Value("${google.credentials.folder.path}")
     private Resource credentialsFile;
+
+    @Value("${app.host.url}")
+    private String hostUrl;
+
+    @Value("${app.drive.changes.webhook}")
+    private String webHookPath;
 
     @Value("${google.app.access.type}")
     private String accessType;
@@ -129,6 +138,11 @@ public class IntegrationResolver {
         }
     }
 
+    /**
+     * Gets profile name.
+     *
+     * @return the profile name
+     */
     private String getProfileName() {
         return String.join("-", environment.getActiveProfiles());
     }
@@ -197,14 +211,73 @@ public class IntegrationResolver {
      * @throws Exception the exception
      */
     public User saveUserDetails(GoogleTokenResponse response, Person person) throws Exception {
-        // persist refresh token with user details in mongo with encryption
-        String refreshToken = response.getRefreshToken();
-        String userId = person.getResourceName();
-        String primaryEmail = person.getEmailAddresses().stream().filter(email -> email.getMetadata().getPrimary()).map(email -> email.getValue()).findFirst().orElseGet(() -> "");
-        User user = new User.Builder().content(person).email(primaryEmail).refreshToken(refreshToken).id(userId).build();
+        final User user = getUserByPerson(person, response.getRefreshToken());
         userService.save(user).block();
-        this.authorizationCodeFlow().createAndStoreCredential(response, userId);
+        // persist refresh token with user details in mongo with encryption
+        storeCredentials(user, response);
+        watchFileChangesForUser(user, response);
         return user;
+    }
+
+    /**
+     * Store credentials.
+     *
+     * @param user     the user
+     * @param response the response
+     * @throws IOException the io exception
+     */
+    private void storeCredentials(User user, GoogleTokenResponse response) throws IOException {
+        this.authorizationCodeFlow().createAndStoreCredential(response, user.getId());
+    }
+
+    /**
+     * Gets user by person.
+     *
+     * @param person       the person
+     * @param refreshToken the refresh token
+     * @return the user by person
+     */
+    private static User getUserByPerson(Person person, String refreshToken) {
+        String primaryEmail = person.getEmailAddresses().stream().filter(email -> email.getMetadata().getPrimary()).map(email -> email.getValue()).findFirst().orElseGet(() -> "");
+        User user = new User.Builder().content(person).email(primaryEmail).refreshToken(refreshToken).id(person.getResourceName()).build();
+        return user;
+    }
+
+    /**
+     * Watch changes for user.
+     *
+     * @param user the user
+     * @throws IOException the io exception
+     */
+    public static void watchFileChangesForUser(User user, GoogleTokenResponse tokenResponse) throws IOException {
+        IntegrationResolver resolver = integrationResolver();
+        Drive drive = resolveGDrive(user.getId());
+        //
+        /**
+         * webhook: https://8d0a-27-116-40-142.in.ngrok.io/changes
+         * use:
+         * drive.channels().stop() to pause
+         * drive.channels().notify() to wakeup
+         */
+        Channel watchChannel = new Channel()
+                .setAddress(String.format("%s%s", resolver.getHostUrl(), resolver.getWebHookPath()))
+                .setKind("api#channel")
+                .setType("webhook")
+                .setPayload(true)
+                // todo - fetch and reuse already created channel
+                .setId(String.format("user-channel-%s", user.getId() + new Date().getTime()))
+                .setToken(user.getId() + "-changes");
+        logger.info(String.format("setting watch channel with webhook url %s for user %s", watchChannel.getAddress(), user.getId()));
+        StartPageToken startPageTokenResponse = drive.changes().getStartPageToken().execute();
+        logger.info(String.format("received the start page token %s for user %s", startPageTokenResponse.getStartPageToken(), user.getId()));
+        String startPageToken = startPageTokenResponse.getStartPageToken();
+        drive.changes()
+            .watch(startPageToken, watchChannel)
+            .setOauthToken(tokenResponse.getAccessToken())
+
+            // .setFields("files(id,name,thumbnailLink,mimeType),nextPageToken")
+            .execute();
+        logger.info(String.format("started watching for files  the start page token %s for user %s", startPageTokenResponse.getStartPageToken(), user.getId()));
     }
 
     /**
@@ -248,5 +321,41 @@ public class IntegrationResolver {
      */
     public String accessType() {
         return accessType;
+    }
+
+    /**
+     * Gets host url.
+     *
+     * @return the host url
+     */
+    public String getHostUrl() {
+        return hostUrl;
+    }
+
+    /**
+     * Sets host url.
+     *
+     * @param hostUrl the host url
+     */
+    public void setHostUrl(String hostUrl) {
+        this.hostUrl = hostUrl;
+    }
+
+    /**
+     * Gets web hook path.
+     *
+     * @return the web hook path
+     */
+    public String getWebHookPath() {
+        return webHookPath;
+    }
+
+    /**
+     * Sets web hook path.
+     *
+     * @param webHookPath the web hook path
+     */
+    public void setWebHookPath(String webHookPath) {
+        this.webHookPath = webHookPath;
     }
 }

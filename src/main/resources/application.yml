@@ -38,6 +38,8 @@ spring:
 app:
   files:
     mime-type: application/vnd.google-apps.document
+  host:
+    url: https://8d0a-27-116-40-142.in.ngrok.io
   sqs:
     que:
       request-name: file-meta-simple-request-que
@@ -46,7 +48,8 @@ app:
     partition-size: 100
   drive:
     mime-types: "application/octet-stream"
-
+    changes:
+      webhook: "/changes"
 aws:
   sqs:
     endpoint: http://localhost:4566

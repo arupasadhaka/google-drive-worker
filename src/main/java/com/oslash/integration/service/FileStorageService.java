@@ -63,7 +63,7 @@ public class FileStorageService {
         String fileName = fileStorageInfo.getFile().getFileName();
         AmazonS3 storageService = IntegrationResolver.resolveStorage();
         final String bucketName = (Constants.BUCKET_PREFIX + userId).replace("/", "");
-        if (!storageService.doesBucketExist(bucketName)) {
+        if (!storageService.doesBucketExistV2(bucketName)) {
             storageService.createBucket(bucketName);
             logger.info(String.format("created bucket with name %s for the user %s", bucketName, userId));
         }

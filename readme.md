@@ -72,7 +72,7 @@ http://localhost/signup
 - aws s3 mb s3://oslash --endpoint-url http://localhost:4566
 - aws --endpoint-url=http://localhost:4566 --region=us-east-1 s3 ls
 
-## dev Setup
+## dev tools
 - pip install awscli-local
 
 
