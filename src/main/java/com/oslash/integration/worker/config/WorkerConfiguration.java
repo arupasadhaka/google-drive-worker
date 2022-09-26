@@ -67,30 +67,36 @@ public class WorkerConfiguration {
      * The App configuration.
      */
     @Autowired
-    AppConfiguration appConfiguration;
+    private AppConfiguration appConfiguration;
 
     /**
      * The File meta writer.
      */
     @Autowired
-    FileMetaWriter fileMetaWriter;
+    private FileMetaWriter fileMetaWriter;
 
     /**
      * The File storage writer.
      */
     @Autowired
-    FileStorageWriter fileStorageWriter;
+    private FileStorageWriter fileStorageWriter;
+
+    @Value("${app.batch.worker.download.file.chunk-size}")
+    private Integer downloadFileStepChunkSize;
+
+    @Value("${app.batch.worker.download.meta.chunk-size}")
+    private Integer downloadFileMetaStepChunkSize;
 
     /**
      * The Job repository.
      */
     @Autowired
-    JobRepository jobRepository;
+    private JobRepository jobRepository;
     /**
      * The Transaction manager.
      */
     @Autowired
-    PlatformTransactionManager transactionManager;
+    private PlatformTransactionManager transactionManager;
     @Autowired
     private RemotePartitioningWorkerStepBuilderFactory stepBuilderFactory;
 
@@ -191,8 +197,7 @@ public class WorkerConfiguration {
     @SuppressFBWarnings("NP_NULL_PARAM_DEREF_ALL_TARGETS_DANGEROUS")
     public Step fileDownloadStep() {
         SimpleStepBuilder simpleStepBuilder = new SimpleStepBuilder(new StepBuilder(WORKER_FILE_DOWNLOADER_STEP_NAME));
-        // todo move chunk size to config
-        simpleStepBuilder.chunk(5)
+        simpleStepBuilder.chunk(downloadFileStepChunkSize)
                 .reader(fileStorageReader(null))
                 .processor(fileStorageProcessor())
                 .writer(fileStorageWriter());
@@ -202,15 +207,14 @@ public class WorkerConfiguration {
     }
 
     /**
-     * File meta save step step.
+     * File meta save step.
      *
      * @return the step
      */
     @SuppressFBWarnings("NP_NULL_PARAM_DEREF_ALL_TARGETS_DANGEROUS")
     public Step fileMetaSaveStep() {
         SimpleStepBuilder simpleStepBuilder = new SimpleStepBuilder(new StepBuilder(WORKER_FILE_META_STEP_NAME));
-        // todo move chunk size to config
-        simpleStepBuilder.chunk(100).reader(fileMetaReader(null)).processor(fileMetaProcessor()).writer(fileMetaWriter());
+        simpleStepBuilder.chunk(downloadFileMetaStepChunkSize).reader(fileMetaReader(null)).processor(fileMetaProcessor()).writer(fileMetaWriter());
         simpleStepBuilder.repository(jobRepository);
         simpleStepBuilder.transactionManager(transactionManager);
         return simpleStepBuilder.build();

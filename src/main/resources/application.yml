@@ -45,7 +45,15 @@ app:
       request-name: file-meta-simple-request-que
       reply-name: file-meta-simple-reply-que
   batch:
-    partition-size: 100
+    manager:
+      partition-size: 100
+    worker:
+      download:
+        meta:
+          chunk-size: 20
+        file:
+          chunk-size: 20
+
   drive:
     mime-types: "application/octet-stream"
     changes:

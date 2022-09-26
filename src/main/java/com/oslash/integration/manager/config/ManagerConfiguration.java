@@ -47,8 +47,8 @@ public class ManagerConfiguration {
     private JobLauncher jobLauncher;
     @Autowired
     private RemotePartitioningManagerStepBuilderFactory partitionStepBuilderFactory;
-    @Value("${app.batch.partition-size}")
-    private Integer partitionSize;
+    @Value("${app.batch.manager.partition-size}")
+    private Integer managerPartitionSize;
 
     /**
      * Requests direct channel.
@@ -126,7 +126,7 @@ public class ManagerConfiguration {
      */
     public Step partitionerStep(User user) {
         // move grid size to config
-        return partitionStepBuilderFactory.get("partitionerStep").partitioner(Constants.WORKER_STEP_NAME, partitioner(user)).gridSize(partitionSize).outputChannel(requests()).build();
+        return partitionStepBuilderFactory.get("partitionerStep").partitioner(Constants.WORKER_STEP_NAME, partitioner(user)).gridSize(managerPartitionSize).outputChannel(requests()).build();
     }
 
     /**

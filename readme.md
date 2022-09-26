@@ -83,20 +83,31 @@ http://localhost/signup
 - aws --endpoint-url=http://localhost:4566 --region=us-east-1 s3 ls
 - download all files for a use in local to verify
   - `awslocal s3 sync s3://user-people111647754396159229803 ~/mukundhan/s3`
-- awslocal s3 rb s3://user-people111647754396159229803 --force
+- check bucket size 
+  - `awslocal s3 ls --summarize --human-readable --recursive s3://user-people111647754396159229803`
+
 
 ## dev tools
 - pip install awscli-local
 - ngrok
   - https://ngrok.com/download
 
+## purge 
+
+```shell
+mongo oslash --eval 'db.users.drop()';
+mongo oslash --eval 'db.file_meta.drop()';
+mongo oslash --eval 'db.file_storage.drop()';
+awslocal s3 rb s3://user-people111647754396159229803 --force;
+```
+
 ## metric
-| Type  | Record Count | Time taken   |
-|-------|--------------|--------------|
-| Sync  | 50           | 38 seconds   |
- | Async | 50           | < 10 seconds |
- |-------|--------------|--------------|
-|-------|--------------|--------------|
-|-------|--------------|--------------|
-|-------|--------------|--------------|
+| Type    | Record Count   | Time taken     | Size   |
+|---------|----------------|----------------|-----|
+| Sync    | 50             | 38 seconds     |     |
+ | Async   | 50             | < 10 seconds   |     |
+ | Async   | 207            | 33 seconds     |     |      |
+| ------- | -------------- | -------------- |     |
+| ------- | -------------- | -------------- |     |
+| ------- | -------------- | -------------- |     |
 
