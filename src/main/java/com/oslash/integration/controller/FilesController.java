@@ -1,6 +1,5 @@
 package com.oslash.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.manager.config.ManagerConfiguration;
 import com.oslash.integration.models.FileMeta;
@@ -13,21 +12,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 
 import static com.oslash.integration.utils.ResourceState.remove;
 import static com.oslash.integration.utils.ResourceState.trash;
+import static java.util.Objects.nonNull;
 
 
 /**
  * The type Driver controller.
  */
 @Profile("manager")
-@Controller
+@RestController
 public class FilesController {
 
     private final Logger logger = LoggerFactory.getLogger(FilesController.class);
@@ -79,12 +78,16 @@ public class FilesController {
         boolean isDeleted = ResourceState.valueOf(resourceState).in(remove, trash);
         FileMeta fileMeta = fileMetaService.getFileById(resourceId).block();
         FileStorage fileStorage = fileStorageService.getFileStorageByFileId(resourceId).block();
-        fileStorage.setResourceState(resourceState);
-        fileStorageService.save(fileStorage);
-        if (isDeleted) {
+        if (nonNull(fileStorage)) {
+            fileStorage.setResourceState(resourceState);
+            fileStorageService.save(fileStorage);
+            if (isDeleted) {
+                fileStorageService.deleteFileFromStorage(fileStorage);
+            }
+        }
+        if (nonNull(fileMeta) && isDeleted) {
             fileMeta.setDeleted(true);
             fileMetaService.save(fileMeta);
-            fileStorageService.deleteFileFromStorage(fileStorage);
         }
         logger.info(String.format("received message for file changes for user"));
     }

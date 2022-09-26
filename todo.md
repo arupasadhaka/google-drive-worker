@@ -6,3 +6,6 @@
 - no content length specified for stream data
 - tweak chunk and others parameters
 - get created channel and re-use to watch fileChanges
+- set expiry on creating channel
+- mask saved token
+- 
