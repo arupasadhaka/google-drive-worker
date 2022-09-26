@@ -16,4 +16,7 @@ public interface Constants {
     String WORKER_FILE_META_STEP_NAME = "file-meta-worker-download";
     String MIME_TYPE_TEXT_PLAIN = "text/plain";
     String BUCKET_PREFIX = "user-";
+    String GOOGLE_RESOURCE_ID_HEADER = "x-goog-resource-id";
+    String GOOGLE_RESOURCE_STATE_HEADER = "x-goog-resource-state";
+    String GOOGLE_RESOURCE_URI_HEADER = "x-goog-resource-uri";
 }

@@ -40,4 +40,8 @@ public class FileMetaService {
     public Flux<FileMeta> save(List<FileMeta> fileMetas) {
         return fileMetaRepository.saveAll(fileMetas);
     }
+
+    public Mono<FileMeta> getFileById(String resourceId) {
+        return fileMetaRepository.findById(resourceId);
+    }
 }

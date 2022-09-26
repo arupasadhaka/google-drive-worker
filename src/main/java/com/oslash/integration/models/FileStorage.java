@@ -27,20 +27,17 @@ public class FileStorage {
     private String userId;
     private String sourceUrl;
     private String bucket;
+    private String resourceState;
     private String mimeType;
     private String fileName;
 
-    /**
-     * Instantiates a new File storage.
-     *
-     * @param builder the builder
-     */
     private FileStorage(Builder builder) {
         setId(builder.id);
         setFileId(builder.fileId);
         setUserId(builder.userId);
         setSourceUrl(builder.sourceUrl);
         setBucket(builder.bucket);
+        setResourceState(builder.resourceState);
         setMimeType(builder.mimeType);
         setFileName(builder.fileName);
     }
@@ -56,6 +53,7 @@ public class FileStorage {
         private String userId;
         private String sourceUrl;
         private String bucket;
+        private String resourceState;
         private String mimeType;
 
         /**
@@ -119,6 +117,11 @@ public class FileStorage {
             return this;
         }
 
+        public Builder resourceState(String val) {
+            resourceState = val;
+            return this;
+        }
+
         /**
          * Mime type builder.
          *
@@ -127,6 +130,11 @@ public class FileStorage {
          */
         public Builder mimeType(String val) {
             mimeType = val;
+            return this;
+        }
+
+        public Builder fileName(String val) {
+            fileName = val;
             return this;
         }
 

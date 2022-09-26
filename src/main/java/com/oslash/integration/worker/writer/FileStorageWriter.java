@@ -28,7 +28,7 @@ public class FileStorageWriter implements ItemWriter<FileStorageInfo> {
     @Override
     public void write(List<? extends FileStorageInfo> list) throws Exception {
         for (FileStorageInfo input : list) {
-            fileStorageService.upload(input);
+            fileStorageService.uploadFile(input);
             fileStorageService.save(input.getFile()).subscribe();
         }
     }

@@ -58,11 +58,11 @@ public class FileStorageService {
      *
      * @param fileStorageInfo the file storage info
      */
-    public void upload(FileStorageInfo fileStorageInfo) {
+    public void uploadFile(FileStorageInfo fileStorageInfo) {
         String userId = fileStorageInfo.getUserId();
         String fileName = fileStorageInfo.getFile().getFileName();
         AmazonS3 storageService = IntegrationResolver.resolveStorage();
-        final String bucketName = (Constants.BUCKET_PREFIX + userId).replace("/", "");
+        final String bucketName = getBucketName(userId);
         if (!storageService.doesBucketExistV2(bucketName)) {
             storageService.createBucket(bucketName);
             logger.info(String.format("created bucket with name %s for the user %s", bucketName, userId));
@@ -71,5 +71,43 @@ public class FileStorageService {
         storageService.putObject(bucketName, fileName, fileStorageInfo.getFileStream(), new ObjectMetadata());
         // TODO get absolute URL from result with region
         fileStorageInfo.getFile().setSourceUrl(String.format("%s/%s", bucketName, fileName));
+    }
+
+    /**
+     * Gets bucket name.
+     *
+     * @param userId the user id
+     * @return the bucket name
+     */
+    private static String getBucketName(String userId) {
+        return (Constants.BUCKET_PREFIX + userId).replace("/", "");
+    }
+
+    /**
+     * Delete file from storage.
+     *
+     * @param fileStorage the file storage
+     */
+    public void deleteFileFromStorage(FileStorage fileStorage) {
+        String userId = fileStorage.getUserId();
+        String fileName = fileStorage.getFileName();
+        AmazonS3 storageService = IntegrationResolver.resolveStorage();
+        final String bucketName = getBucketName(userId);
+        if (!storageService.doesBucketExistV2(bucketName)) {
+            logger.info(String.format("bucket and file not found with bucket name %s and file name %s", bucketName, fileName));
+            return;
+        }
+        logger.info(String.format("saved file %s for user %s in bucket id %s", fileName, userId, bucketName));
+        storageService.deleteObject(bucketName, fileName);
+    }
+
+    /**
+     * Gets file storage by file id.
+     *
+     * @param resourceId the resource id
+     * @return the file storage by file id
+     */
+    public Mono<FileStorage> getFileStorageByFileId(String resourceId) {
+        return fileStorageRepository.findDistinctByFileId(resourceId);
     }
 }

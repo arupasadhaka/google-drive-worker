@@ -3,6 +3,12 @@ package com.oslash.integration.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.manager.config.ManagerConfiguration;
+import com.oslash.integration.models.FileMeta;
+import com.oslash.integration.models.FileStorage;
+import com.oslash.integration.service.FileMetaService;
+import com.oslash.integration.service.FileStorageService;
+import com.oslash.integration.utils.Constants;
+import com.oslash.integration.utils.ResourceState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +18,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+
+import static com.oslash.integration.utils.ResourceState.remove;
+import static com.oslash.integration.utils.ResourceState.trash;
 
 
 /**
@@ -29,6 +38,12 @@ public class FilesController {
     @Autowired
     AppConfiguration appConfiguration;
 
+    @Autowired
+    FileMetaService fileMetaService;
+
+    @Autowired
+    FileStorageService fileStorageService;
+
     /**
      * The Manager.
      */
@@ -41,8 +56,7 @@ public class FilesController {
      * @throws Exception the exception
      */
     @PostMapping(value = {"/changes"})
-    public @ResponseBody Object fileChanges(HttpServletRequest request) throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
+    public void fileChanges(HttpServletRequest request) {
         /**
          * === MimeHeaders ===
          * host = 8d0a-27-116-40-142.in.ngrok.io
@@ -60,7 +74,18 @@ public class FilesController {
          * x-goog-resource-state = change
          * x-goog-resource-uri = https://www.googleapis.com/drive/v3/changes?fields=files(id,name,thumbnailLink,mimeType),nextPageToken&includeCorpusRemovals=false&includeItemsFromAllDrives=false&includeRemoved=true&includeTeamDriveItems=false&oauth_token=my_token&pageSize=100&pageToken=25230&restrictToMyDrive=false&spaces=drive&supportsAllDrives=false&supportsTeamDrives=false&alt=json
          */
+        String resourceState = request.getHeader(Constants.GOOGLE_RESOURCE_STATE_HEADER);
+        String resourceId = request.getHeader(Constants.GOOGLE_RESOURCE_ID_HEADER);
+        boolean isDeleted = ResourceState.valueOf(resourceState).in(remove, trash);
+        FileMeta fileMeta = fileMetaService.getFileById(resourceId).block();
+        FileStorage fileStorage = fileStorageService.getFileStorageByFileId(resourceId).block();
+        fileStorage.setResourceState(resourceState);
+        fileStorageService.save(fileStorage);
+        if (isDeleted) {
+            fileMeta.setDeleted(true);
+            fileMetaService.save(fileMeta);
+            fileStorageService.deleteFileFromStorage(fileStorage);
+        }
         logger.info(String.format("received message for file changes for user"));
-        return "";
     }
 }

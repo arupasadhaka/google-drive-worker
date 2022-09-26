@@ -27,6 +27,8 @@ public class FileMeta {
     private String mimeType;
 
     private String userId;
+
+    private boolean deleted = false;
     private Object content;
 
     /**
@@ -42,15 +44,11 @@ public class FileMeta {
         this.content = content;
     }
 
-    /**
-     * Instantiates a new File meta.
-     *
-     * @param builder the builder
-     */
-    public FileMeta(Builder builder) {
+    private FileMeta(Builder builder) {
         setId(builder.id);
-        setUserId(builder.userId);
         setMimeType(builder.mimeType);
+        setUserId(builder.userId);
+        setDeleted(builder.deleted);
         setContent(builder.content);
     }
 
@@ -63,6 +61,7 @@ public class FileMeta {
         private Object content;
 
         private String userId;
+        private boolean deleted;
 
         /**
          * Instantiates a new Builder.
@@ -100,6 +99,11 @@ public class FileMeta {
          */
         public Builder userId(String val) {
             userId = val;
+            return this;
+        }
+
+        public Builder deleted(boolean val) {
+            deleted = val;
             return this;
         }
 
