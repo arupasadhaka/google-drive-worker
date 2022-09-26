@@ -8,6 +8,7 @@ import com.oslash.integration.service.FileMetaService;
 import com.oslash.integration.service.FileStorageService;
 import com.oslash.integration.utils.Constants;
 import com.oslash.integration.utils.ResourceState;
+import com.oslash.integration.worker.model.FileStorageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +17,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 
-import static com.oslash.integration.utils.ResourceState.remove;
-import static com.oslash.integration.utils.ResourceState.trash;
+import static com.oslash.integration.utils.ResourceState.*;
 import static java.util.Objects.nonNull;
 
 
@@ -50,12 +51,14 @@ public class FilesController {
     ManagerConfiguration manager;
 
     /**
+     * File changes.
+     *
      * @param request the request
      * @return the object
-     * @throws Exception the exception
+     * @throws IOException the io exception
      */
     @PostMapping(value = {"/changes"})
-    public void fileChanges(HttpServletRequest request) {
+    public void fileChanges(HttpServletRequest request) throws IOException {
         /**
          * === MimeHeaders ===
          * host = 8d0a-27-116-40-142.in.ngrok.io
@@ -75,20 +78,50 @@ public class FilesController {
          */
         String resourceState = request.getHeader(Constants.GOOGLE_RESOURCE_STATE_HEADER);
         String resourceId = request.getHeader(Constants.GOOGLE_RESOURCE_ID_HEADER);
-        boolean isDeleted = ResourceState.valueOf(resourceState).in(remove, trash);
+        ResourceState fileState = ResourceState.valueOf(resourceState);
+        boolean isDeleted = fileState.in(remove, trash);
         FileMeta fileMeta = fileMetaService.getFileById(resourceId).block();
         FileStorage fileStorage = fileStorageService.getFileStorageByFileId(resourceId).block();
+        handleFileMeta(isDeleted, fileMeta);
+        handleFileStorage(resourceState, fileState, isDeleted, fileMeta, fileStorage);
+        logger.info(String.format("received message for file changes for user"));
+    }
+
+    /**
+     * Handle file meta.
+     *
+     * @param isDeleted the is deleted
+     * @param fileMeta  the file meta
+     */
+    private void handleFileMeta(boolean isDeleted, FileMeta fileMeta) {
+        if (nonNull(fileMeta) && isDeleted) {
+            fileMeta.setDeleted(true);
+            fileMetaService.save(fileMeta);
+        }
+    }
+
+    /**
+     * Handle file storage.
+     *
+     * @param resourceState the resource state
+     * @param fileState     the file state
+     * @param isDeleted     the is deleted
+     * @param fileMeta      the file meta
+     * @param fileStorage   the file storage
+     * @throws IOException the io exception
+     */
+    private void handleFileStorage(String resourceState, ResourceState fileState, boolean isDeleted, FileMeta fileMeta, FileStorage fileStorage) throws IOException {
         if (nonNull(fileStorage)) {
             fileStorage.setResourceState(resourceState);
+            if (fileState.in(add)) {
+                FileStorageInfo fileStorageInfo = fileStorageService.getFileStorageInfo(fileMeta.asMap());
+                fileStorageService.uploadFile(fileStorageInfo);
+                fileStorage = fileStorageInfo.getFile();
+            }
             fileStorageService.save(fileStorage);
             if (isDeleted) {
                 fileStorageService.deleteFileFromStorage(fileStorage);
             }
         }
-        if (nonNull(fileMeta) && isDeleted) {
-            fileMeta.setDeleted(true);
-            fileMetaService.save(fileMeta);
-        }
-        logger.info(String.format("received message for file changes for user"));
     }
 }

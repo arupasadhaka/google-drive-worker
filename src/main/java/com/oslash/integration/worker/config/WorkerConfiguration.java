@@ -1,11 +1,9 @@
 package com.oslash.integration.worker.config;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.google.api.services.drive.Drive;
 import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.models.FileMeta;
-import com.oslash.integration.models.FileStorage;
-import com.oslash.integration.resolver.IntegrationResolver;
+import com.oslash.integration.service.FileStorageService;
 import com.oslash.integration.utils.Constants;
 import com.oslash.integration.worker.model.FileStorageInfo;
 import com.oslash.integration.worker.transformer.MessageTransformer;
@@ -45,7 +43,6 @@ import org.springframework.integration.transformer.Transformer;
 import org.springframework.jmx.export.naming.ObjectNamingStrategy;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +58,7 @@ public class WorkerConfiguration {
     /**
      * The Logger.
      */
-    Logger logger = LoggerFactory.getLogger(getClass());
+    private static Logger logger = LoggerFactory.getLogger(WorkerConfiguration.class);
 
     /**
      * The App configuration.
@@ -99,6 +96,10 @@ public class WorkerConfiguration {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private RemotePartitioningWorkerStepBuilderFactory stepBuilderFactory;
+
+    @Autowired
+    private FileStorageService fileStorageService;
+
 
     /**
      * Inbound flow integration flow.
@@ -263,11 +264,7 @@ public class WorkerConfiguration {
             @SneakyThrows
             @Override
             public FileStorageInfo process(Map item) {
-                final FileStorage fileStorage = new FileStorage.Builder().file(item).build();
-                logger.info("Processing file downloader for file " + fileStorage.getFileId());
-                final Drive drive = IntegrationResolver.resolveGDrive(fileStorage.getUserId());
-                final InputStream fileStream = drive.files().export(fileStorage.getFileId(), Constants.MIME_TYPE_TEXT_PLAIN).executeMediaAsInputStream();
-                return new FileStorageInfo.Builder().fileStream(fileStream).file(fileStorage).userId(fileStorage.getUserId()).build();
+                return fileStorageService.getFileStorageInfo(item);
             }
         });
         processor.setTaskExecutor(new SimpleAsyncTaskExecutor());

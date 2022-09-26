@@ -8,6 +8,7 @@ import lombok.ToString;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.Objects.nonNull;
@@ -31,6 +32,8 @@ public class FileMeta {
     private boolean deleted = false;
     private Object content;
 
+    private String name;
+
     /**
      * Instantiates a new File meta.
      *
@@ -44,12 +47,32 @@ public class FileMeta {
         this.content = content;
     }
 
+    /**
+     * Instantiates a new File meta.
+     *
+     * @param builder the builder
+     */
     private FileMeta(Builder builder) {
         setId(builder.id);
         setMimeType(builder.mimeType);
         setUserId(builder.userId);
         setDeleted(builder.deleted);
         setContent(builder.content);
+        setName(builder.name);
+    }
+
+    /**
+     * As map map.
+     *
+     * @return the map
+     */
+    public Map asMap() {
+        Map item = new HashMap();
+        item.put(Constants.FILE_ID, this.getId());
+        item.put(Constants.FILE_NAME, this.getName());
+        item.put(Constants.USER_ID, this.getId());
+        item.put(Constants.MIME_TYPE, this.getMimeType());
+        return item;
     }
 
     /**
@@ -59,6 +82,7 @@ public class FileMeta {
         private String id;
         private String mimeType;
         private Object content;
+        private String name;
 
         private String userId;
         private boolean deleted;
@@ -102,6 +126,12 @@ public class FileMeta {
             return this;
         }
 
+        /**
+         * Deleted builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder deleted(boolean val) {
             deleted = val;
             return this;
@@ -115,6 +145,17 @@ public class FileMeta {
          */
         public Builder content(Object val) {
             content = val;
+            return this;
+        }
+
+        /**
+         * Name builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
+        public Builder name(String val) {
+            name = val;
             return this;
         }
 

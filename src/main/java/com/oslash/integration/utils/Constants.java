@@ -9,6 +9,11 @@ public interface Constants {
     String FILE_ID = "fileId";
     String FILE_NAME = "fileName";
     String MIME_TYPE = "mimeType";
+    String NAME = "name";
+    String AND = " and ";
+    String IN = " in ";
+    String FOLDERS = "parents";
+    String GOOGLE_DRIVE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder";
     String NEXT_PAGE_TOKEN = "nextPageToken";
     String DRIVE_SPACE = "drive";
     String WORKER_STEP_NAME = "file-meta-worker";

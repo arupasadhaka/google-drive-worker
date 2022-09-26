@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.partition.support.MultiResourcePartitioner;
 import org.springframework.batch.item.ExecutionContext;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -75,15 +76,12 @@ public class FilesPartitioner extends MultiResourcePartitioner {
         Map<String, ExecutionContext> partitions = new HashMap<>();
         while (!reachedEnd) {
             try {
-                FileList fileList = drive.files()
-                        .list()
+                String filesQuery = String.format("%s='%s'", Constants.MIME_TYPE, appConfiguration.getMimeType());
+                filesQuery += Constants.AND + getFolderQuery();
+                logger.debug(String.format("partition query %s", filesQuery));
+                FileList fileList = drive.files().list()
                         // selecting only documents
-                        .setQ(String.format("%s='%s'", Constants.MIME_TYPE, appConfiguration.getMimeType()))
-                        .setSpaces(Constants.DRIVE_SPACE)
-                        .setPageSize(gridSize)
-                        .setPageToken(nextPageToken)
-                        .setFields("files(id,name,thumbnailLink,mimeType),nextPageToken")
-                        .execute();
+                        .setQ(filesQuery).setSpaces(Constants.DRIVE_SPACE).setPageSize(gridSize).setPageToken(nextPageToken).setFields("files(id,name,thumbnailLink,mimeType),nextPageToken").execute();
                 if (fileList.size() > 0) {
                     ExecutionContext executionContext = new ExecutionContext();
                     executionContext.put("data", getPartitionMetaData(fileList));
@@ -105,6 +103,29 @@ public class FilesPartitioner extends MultiResourcePartitioner {
             }
         }
         return partitions;
+    }
+
+    /**
+     * Gets folder query.
+     *
+     * @return the folder query
+     * @throws IOException the io exception
+     */
+    private String getFolderQuery() throws IOException {
+        String result = "";
+        if (Strings.isNotBlank(appConfiguration.getFolderName())) {
+            String folderQuery = String.format("%s='%s'", Constants.MIME_TYPE, Constants.GOOGLE_DRIVE_FOLDER_MIME_TYPE);
+            folderQuery += Constants.AND + String.format("%s='%s'", Constants.NAME, appConfiguration.getFolderName());
+            FileList folders = drive.files().list().setQ(folderQuery).setSpaces(Constants.DRIVE_SPACE).setFields("files(id,name),nextPageToken").execute();
+            if (folders != null && !CollectionUtils.isEmpty(folders.getFiles())) {
+                logger.info(String.format("found folder %s for the user %s", appConfiguration.getFolderName(), user.getId()));
+                // eg: https://www.googleapis.com/drive/v3/files?q="folderId"+in+parents&fields=files(md5Checksum,+originalFilename)
+                result += String.format("'%s' %s %s", folders.getFiles().get(0).getId(), Constants.IN, Constants.FOLDERS);
+            } else {
+                logger.info(String.format("folder %s not found for the user %s", appConfiguration.getFolderName(), user.getId()));
+            }
+        }
+        return result;
     }
 
     /**

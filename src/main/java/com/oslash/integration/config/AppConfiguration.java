@@ -25,9 +25,17 @@ public class AppConfiguration {
     @Value("${app.sqs.que.request-name}")
     private String requestQueName;
 
+    @Value("${app.drive.watch.folder.name}")
+    private String folderName;
+
     // can be used in remote chunking
     @Value("${app.sqs.que.reply-name}")
     private String replyQueName;
+
+
+    @Value("${app.drive.buffer-size}")
+    private Integer bufferSize;
+
 
     @Value("${app.files.mime-type}")
     private String mimeType;
@@ -50,9 +58,7 @@ public class AppConfiguration {
     @Bean
     public Jackson2ObjectMapperBuilder jacksonBuilder() {
         Jackson2ObjectMapperBuilder b = new Jackson2ObjectMapperBuilder();
-        b.indentOutput(true)
-                .mixIn(org.springframework.batch.core.StepExecution.class, StepExecutionsMixin.class)
-                .mixIn(org.springframework.batch.core.JobExecution.class, JobExecutionMixin.class);
+        b.indentOutput(true).mixIn(org.springframework.batch.core.StepExecution.class, StepExecutionsMixin.class).mixIn(org.springframework.batch.core.JobExecution.class, JobExecutionMixin.class);
         return b;
     }
 
@@ -128,6 +134,24 @@ public class AppConfiguration {
      */
     public void setMimeType(String mimeType) {
         this.mimeType = mimeType;
+    }
+
+    /**
+     * Gets folder id.
+     *
+     * @return the folder id
+     */
+    public String getFolderName() {
+        return folderName;
+    }
+
+    /**
+     * Gets buffer size.
+     *
+     * @return the buffer size
+     */
+    public Integer getBufferSize() {
+        return bufferSize;
     }
 
     /**

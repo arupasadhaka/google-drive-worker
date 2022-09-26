@@ -1,6 +1,8 @@
-### Design
+### Oslash Integration Worker 
+Driver plugin and text parser for oslash to link google accounts and google drive. 
 
-sequence diagram
+### Design
+Application sequence diagram
 
 ```
 [user]            [manager]            [g-auth]   [notification]     [people]        [gdrive]    [que]             [worker's]               [s3]           [mongo]          [mysql]        [timeline]
@@ -67,6 +69,10 @@ sequence diagram
  |                    |                   |           |                  |              |          |                   |                     |               |                |      
  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ```
+
+### Spring batch integration 
+![workflow](docs/job-repository-polling.png)
+
 ### Google Cloud Setup 
 
 - Create a Project in Google could and include Google Drive API
@@ -151,14 +157,13 @@ awslocal s3 rb s3://user-people111647754396159229803 --force;
 ```
 
 ## metric (includes fetching file from drive, saving meta, uploading to s3)
-| Type    | Record Count   | Time taken     | Size   |
-|---------|----------------|----------------|-----|
-| Sync    | 50             | 38 seconds     |     |
-| Async   | 50             | < 10 seconds   |     |
-| Async   | 207            | 33 seconds     |     |      |
-| ------- | -------------- | -------------- |     |
-| ------- | -------------- | -------------- |     |
-| ------- | -------------- | -------------- |     |
+| Type   | Record Count | Time taken                   | Size per record ) | Workers |
+|--------|--------------|------------------------------|-------------------|---------|
+| Sync   | 50           | 38s                          | < 50kb            | 1       |
+| Async  | 100          | 32s                          | 100kb             | 1       |
+| Async  | 100          | 42s                          | 500kb             | 1       |
+| Async  | 1000         | 33s (increased buffer limit) | 1000kb            | 1       |
+
 
 
 ## links

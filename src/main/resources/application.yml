@@ -37,7 +37,8 @@ spring:
 
 app:
   files:
-    mime-type: application/vnd.google-apps.document
+#    mime-type: application/vnd.google-apps.document
+    mime-type: text/plain
   host:
     url: https://8d0a-27-116-40-142.in.ngrok.io
   sqs:
@@ -58,6 +59,10 @@ app:
     mime-types: "application/octet-stream"
     changes:
       webhook: "/changes"
+    watch:
+      folder:
+        name: oslash-test
+    buffer-size: 100000000
 aws:
   sqs:
     endpoint: http://localhost:4566
@@ -66,6 +71,13 @@ aws:
   secretKey: ''
   s3:
     endpoint: http://localhost:4566
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    com.oslash: DEBUG
+    org.hibernate: INFO
 
 google:
   app:

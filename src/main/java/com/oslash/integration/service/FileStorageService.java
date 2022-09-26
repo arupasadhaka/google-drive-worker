@@ -2,6 +2,9 @@ package com.oslash.integration.service;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.google.api.services.drive.Drive;
+import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.models.FileStorage;
 import com.oslash.integration.repository.FileStorageRepository;
 import com.oslash.integration.resolver.IntegrationResolver;
@@ -14,7 +17,10 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -22,10 +28,14 @@ import java.util.List;
  */
 @Service
 public class FileStorageService {
+
+    @Autowired
+    AppConfiguration appConfiguration;
+
     /**
      * The Logger.
      */
-    Logger logger = LoggerFactory.getLogger(getClass());
+    private static Logger logger = LoggerFactory.getLogger(FileStorageService.class);
 
     /**
      * The File storage repository.
@@ -68,7 +78,9 @@ public class FileStorageService {
             logger.info(String.format("created bucket with name %s for the user %s", bucketName, userId));
         }
         logger.info(String.format("saved file %s for user %s in bucket id %s", fileName, userId, bucketName));
-        storageService.putObject(bucketName, fileName, fileStorageInfo.getFileStream(), new ObjectMetadata());
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fileName, fileStorageInfo.getFileStream(), new ObjectMetadata());
+        putObjectRequest.getRequestClientOptions().setReadLimit(appConfiguration.getBufferSize());
+        storageService.putObject(putObjectRequest);
         // TODO get absolute URL from result with region
         fileStorageInfo.getFile().setSourceUrl(String.format("%s/%s", bucketName, fileName));
     }
@@ -109,5 +121,20 @@ public class FileStorageService {
      */
     public Mono<FileStorage> getFileStorageByFileId(String resourceId) {
         return fileStorageRepository.findDistinctByFileId(resourceId);
+    }
+
+    /**
+     * Gets file storage info.
+     *
+     * @param item the item
+     * @return the file storage info
+     * @throws IOException the io exception
+     */
+    public FileStorageInfo getFileStorageInfo(Map item) throws IOException {
+        final FileStorage fileStorage = new FileStorage.Builder().file(item).build();
+        logger.info("Processing file meta to download file " + fileStorage.getFileId());
+        final Drive drive = IntegrationResolver.resolveGDrive(fileStorage.getUserId());
+        final InputStream fileStream = drive.files().get(fileStorage.getFileId()).executeMediaAsInputStream();
+        return new FileStorageInfo.Builder().fileStream(fileStream).file(fileStorage).userId(fileStorage.getUserId()).build();
     }
 }
