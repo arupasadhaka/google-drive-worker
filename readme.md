@@ -1,5 +1,5 @@
-### Oslash Integration Worker 
-Driver plugin and text parser for oslash to link google accounts and google drive. 
+### Gooogle Drive <-> S3 Integration Worker 
+Driver plugin and text parser to download files and upload them to s3 for processing. 
 
 ### Design
 Application sequence diagram
@@ -134,7 +134,7 @@ http://localhost/signup
 ## s3 
 ```shell
 delete bucket
-- aws s3 mb s3://oslash --endpoint-url http://localhost:4566
+- aws s3 mb s3://my_bucket --endpoint-url http://localhost:4566
 download all files for a use in local to verify
   - `awslocal s3 sync s3://user-people111647754396159229803 ~/mukundhan/s3`
 check bucket size 
@@ -150,9 +150,9 @@ pip install awscli-local
 ## purge 
 
 ```shell
-mongo oslash --eval 'db.users.drop()';
-mongo oslash --eval 'db.file_meta.drop()';
-mongo oslash --eval 'db.file_storage.drop()';
+mongo database --eval 'db.users.drop()';
+mongo database --eval 'db.file_meta.drop()';
+mongo database --eval 'db.file_storage.drop()';
 awslocal s3 rb s3://user-people111647754396159229803 --force;
 ```
 
