@@ -1,3 +1,60 @@
+### Design
+
+sequence diagram
+
+```
+[user]            [manager]            [g-auth]   [notification]     [people]        [gdrive]    [que]              [worker]               [s3]           [mongo]          [mysql]        [timeline]
+ |                    |                   |           |                  |              |          |                   |                     |               |                |  
+ |--(signup)--------> |                   |           |                  |              |          |                   |                     |               |                |
+ |                    |------------------>|           |                  |              |          |                   |                     |               |                |
+ |                    |                   |           |                  |              |          |                   |                     |               |                |
+ |                    |<---(credential)---|           |                  |              |          |                   |                     |               |                |
+ |                    |                   |           |                  |              |          |                   |                     |               |                |
+ |                    |-----(persist user details)---------------------------------------------------------------------------------------------------------->|                |          [user saved]
+ |                    |                   |           |                  |              |          |                   |                     |               |                |
+ |                    |--(subscribe-to-file-changes)->|                  |              |          |                   |                     |               |                |          [registered a channel and webhook]
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |        (triggers-download-meta-and-files-job)-----(persist job parameters for user)--------------------------------------------------------------------------------------->|          [job triggered]
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |            (fetches file meta)------------------------------------------------------>|          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |          (partition into chunks)---------------------------------------------------->|          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |----(chunk-1)--->  |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |<----(fetch from drive)<-(process)                  |               |                |
+ |                    |                               |                  |              |          |                   |----(upload to s3)-->|               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |-----(save file meta)--------------->|                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |-----(persist job step completion for chunk 1)------->|         [step completed]
+ |                    |                               |                  |              |          |----(chunk-2)--->  |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |----(chunk-3)--->  |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |-----(check for job completion by polling)------------------------------------------------------------------------------------------------------------>|         [job completed]
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |------------(user updates a file in drive)------------------------------------------->|          |                   |                     |               |                |        [user makes changes in drive]
+ |                    |                               |                  |              |          |                   |                     |               |                |  
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |<-------(calls webhook to listen change)-------------------------|          |                   |                     |               |                |        [notification triggers webhook]
+ |                    |                               |                  |              |          |                   |                     |               |                |      
+ |                    |                               |                  |              |          |                   |                     |               |                |      
+ |                    |-------(update or remove file from s3)------------------------------------------------------------------------------->|               |                |      
+ |                    |                               |                  |              |          |                   |                     |               |                |      
+ |                    |-------(update meta and storage details)-------------------------------------------------------------------------------------------------------------->|        [notification updated]
+ |                    |                               |                  |              |          |                   |                     |               |                |
+ |                    |                               |                  |              |          |                   |                     |               |                |      
+
+```
 ### Google Cloud Setup 
 
 - Create a Project in Google could and include Google Drive API
@@ -50,30 +107,6 @@ http://localhost/signup
 ```
 - file meta and user details will be persisted in mongo db
 
-## links
-
-### Google api
-- https://medium.com/javarevisited/oauth-2-0-with-google-client-libraries-java-sdk-e5439accdf7a
-- https://developers.google.com/api-client-library/java/google-api-java-client/oauth2
-- https://developers.google.com/identity/sign-in/android/backend-auth
-- https://github.com/googleworkspace/java-samples
-- https://github.com/localstack/localstack
-
-### reactive
-- https://www.baeldung.com/spring-data-mongodb-reactive
-- https://docs.spring.io/spring-integration/docs/current/reference/html/reactive-streams.html#reactive-streams
-
-
-### spring-batch
-- https://docs.spring.io/spring-batch/docs/current/reference/html/spring-batch-integration.html#remote-chunking
-- https://github.com/spring-projects/spring-batch/issues/1488
-- https://stackoverflow.com/questions/30786382/spring-batch-difference-between-multithreading-vs-partitioning
-- https://frandorado.github.io/spring/2019/10/11/spring-batch-aws-series-partitioning.html
-- https://github.com/frandorado/spring-projects/tree/master/spring-batch-aws-integration
-
-### remote-chunking
-- https://frandorado.github.io/spring/2019/09/19/spring-batch-aws-series-chunking.html#:~:text=With%20Remote%20Chunking%20the%20data,be%20returned%20to%20the%20master.&text=Slave%20doesn't%20need%20database,This%20arrives%20through%20SQS%20messages.
-
 ### que delete
 ```shell
 - aws --endpoint-url=http://localhost:4566 sqs delete-queue --queue-url=http://localhost:4566/000000000000/file-meta-simple-request-que
@@ -105,13 +138,37 @@ mongo oslash --eval 'db.file_storage.drop()';
 awslocal s3 rb s3://user-people111647754396159229803 --force;
 ```
 
-## metric
+## metric (includes fetching file from drive, saving meta, uploading to s3)
 | Type    | Record Count   | Time taken     | Size   |
 |---------|----------------|----------------|-----|
 | Sync    | 50             | 38 seconds     |     |
- | Async   | 50             | < 10 seconds   |     |
- | Async   | 207            | 33 seconds     |     |      |
+| Async   | 50             | < 10 seconds   |     |
+| Async   | 207            | 33 seconds     |     |      |
 | ------- | -------------- | -------------- |     |
 | ------- | -------------- | -------------- |     |
 | ------- | -------------- | -------------- |     |
 
+
+## links
+
+### Google api
+- https://medium.com/javarevisited/oauth-2-0-with-google-client-libraries-java-sdk-e5439accdf7a
+- https://developers.google.com/api-client-library/java/google-api-java-client/oauth2
+- https://developers.google.com/identity/sign-in/android/backend-auth
+- https://github.com/googleworkspace/java-samples
+- https://github.com/localstack/localstack
+
+### reactive
+- https://www.baeldung.com/spring-data-mongodb-reactive
+- https://docs.spring.io/spring-integration/docs/current/reference/html/reactive-streams.html#reactive-streams
+
+
+### spring-batch
+- https://docs.spring.io/spring-batch/docs/current/reference/html/spring-batch-integration.html#remote-chunking
+- https://github.com/spring-projects/spring-batch/issues/1488
+- https://stackoverflow.com/questions/30786382/spring-batch-difference-between-multithreading-vs-partitioning
+- https://frandorado.github.io/spring/2019/10/11/spring-batch-aws-series-partitioning.html
+- https://github.com/frandorado/spring-projects/tree/master/spring-batch-aws-integration
+
+### remote-chunking
+- https://frandorado.github.io/spring/2019/09/19/spring-batch-aws-series-chunking.html#:~:text=With%20Remote%20Chunking%20the%20data,be%20returned%20to%20the%20master.&text=Slave%20doesn't%20need%20database,This%20arrives%20through%20SQS%20messages.
