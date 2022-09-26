@@ -24,6 +24,16 @@ mvn dependency:resolve;
 docker-compose up -d;
 ```
 
+- start ngrok
+```shell
+ngrok http 80 
+```
+
+- update end point url in [src/main/resources/application.yml](src/main/resources/application.yml)
+```shell
+app.host.url
+```
+ 
 - start manager
 ```shell
 sh scripts/dev/start-manager.sh;
@@ -71,10 +81,14 @@ http://localhost/signup
 ## s3 
 - aws s3 mb s3://oslash --endpoint-url http://localhost:4566
 - aws --endpoint-url=http://localhost:4566 --region=us-east-1 s3 ls
+- download all files for a use in local to verify
+  - `awslocal s3 sync s3://user-people111647754396159229803 ~/mukundhan/s3`
+- awslocal s3 rb s3://user-people111647754396159229803 --force
 
 ## dev tools
 - pip install awscli-local
-
+- ngrok
+  - https://ngrok.com/download
 
 ## metric
 | Type  | Record Count | Time taken   |
