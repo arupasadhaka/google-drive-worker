@@ -151,6 +151,12 @@
 			<scope>test</scope>
 			<version>4.3.6</version>
 		</dependency>
+		<dependency>
+			<groupId>com.github.spotbugs</groupId>
+			<artifactId>spotbugs-annotations</artifactId>
+			<version>RELEASE</version>
+			<scope>compile</scope>
+		</dependency>
 		<!-- SPRING BATCH ENDS-->
 	</dependencies>
 

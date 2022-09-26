@@ -10,15 +10,33 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
+/**
+ * The type File meta service.
+ */
 @Service
 public class FileMetaService {
+    /**
+     * The File meta repository.
+     */
     @Autowired
     FileMetaRepository fileMetaRepository;
 
+    /**
+     * Save mono.
+     *
+     * @param fileMeta the file meta
+     * @return the mono
+     */
     public Mono<FileMeta> save(FileMeta fileMeta) {
         return fileMetaRepository.save(fileMeta);
     }
 
+    /**
+     * Save flux.
+     *
+     * @param fileMetas the file metas
+     * @return the flux
+     */
     public Flux<FileMeta> save(List<FileMeta> fileMetas) {
         return fileMetaRepository.saveAll(fileMetas);
     }

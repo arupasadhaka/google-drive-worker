@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * The type Storage configuration.
+ */
 @Configuration
 public class StorageConfiguration {
 
@@ -26,6 +29,11 @@ public class StorageConfiguration {
     private String s3EndPoint;
 
 
+    /**
+     * Amazon s 3 amazon s 3.
+     *
+     * @return the amazon s 3
+     */
     @Bean
     public AmazonS3 amazonS3() {
         BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);

@@ -8,7 +8,16 @@ import org.springframework.messaging.Message;
 
 import java.util.Map;
 
+/**
+ * The type Message transformer.
+ */
 public class MessageTransformer extends AbstractTransformer {
+    /**
+     * Do transform object.
+     *
+     * @param message the message
+     * @return the object
+     */
     @Override
     protected Object doTransform(Message<?> message) {
         Map map = null;

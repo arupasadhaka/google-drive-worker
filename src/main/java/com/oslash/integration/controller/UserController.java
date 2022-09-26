@@ -33,17 +33,35 @@ public class UserController {
 
     private final Logger logger = LoggerFactory.getLogger(UserController.class);
 
+    /**
+     * The App configuration.
+     */
     @Autowired
     AppConfiguration appConfiguration;
 
+    /**
+     * The Manager.
+     */
     @Autowired
     ManagerConfiguration manager;
 
+    /**
+     * Landing page.
+     *
+     * @param response the response
+     * @throws Exception the exception
+     */
     @GetMapping(value = {"/"})
     public void landingPage(HttpServletResponse response) throws Exception {
         response.sendRedirect("/signup");
     }
 
+    /**
+     * Sign up.
+     *
+     * @param response the response
+     * @throws Exception the exception
+     */
     @GetMapping(value = {"/signup"})
     public void signUp(HttpServletResponse response) throws Exception {
         GoogleAuthorizationCodeRequestUrl url = integrationResolver().authorizationCodeFlow().newAuthorizationUrl();
@@ -51,6 +69,14 @@ public class UserController {
         response.sendRedirect(redirectURL);
     }
 
+    /**
+     * O auth callback person.
+     *
+     * @param request  the request
+     * @param response the response
+     * @return the person
+     * @throws Exception the exception
+     */
     @GetMapping(value = {"/oauth"})
     public @ResponseBody Person oAuthCallback(HttpServletRequest request, HttpServletResponse response) throws Exception {
         String authCode = request.getParameter("code");

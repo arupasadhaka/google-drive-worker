@@ -16,6 +16,9 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * The type App configuration.
+ */
 @Configuration
 public class AppConfiguration {
 
@@ -29,11 +32,21 @@ public class AppConfiguration {
     @Value("${app.files.mime-type}")
     private String mimeType;
 
+    /**
+     * Object to json transformer object to json transformer.
+     *
+     * @return the object to json transformer
+     */
     @Bean
     public ObjectToJsonTransformer objectToJsonTransformer() {
         return new ObjectToJsonTransformer(jacksonJsonBuilder());
     }
 
+    /**
+     * Jackson builder jackson 2 object mapper builder.
+     *
+     * @return the jackson 2 object mapper builder
+     */
     @Bean
     public Jackson2ObjectMapperBuilder jacksonBuilder() {
         Jackson2ObjectMapperBuilder b = new Jackson2ObjectMapperBuilder();
@@ -48,6 +61,7 @@ public class AppConfiguration {
      * fix step execution serialise with circular dependency
      * </p>
      *
+     * @return the jackson 2 json object mapper
      * @See {@link <a href="https://github.com/spring-projects/spring-batch/issues/1488#issuecomment-566278703">issue</a>}
      * @See org.springframework.integration.json.ObjectToJsonTransformer#jsonObjectMapper
      */
@@ -62,36 +76,72 @@ public class AppConfiguration {
         return b;
     }
 
+    /**
+     * Gets request que name.
+     *
+     * @return the request que name
+     */
     public String getRequestQueName() {
         return requestQueName;
     }
 
+    /**
+     * Sets request que name.
+     *
+     * @param requestQueName the request que name
+     */
     public void setRequestQueName(String requestQueName) {
         this.requestQueName = requestQueName;
     }
 
+    /**
+     * Gets reply que name.
+     *
+     * @return the reply que name
+     */
     public String getReplyQueName() {
         return replyQueName;
     }
 
+    /**
+     * Sets reply que name.
+     *
+     * @param replyQueName the reply que name
+     */
     public void setReplyQueName(String replyQueName) {
         this.replyQueName = replyQueName;
     }
 
+    /**
+     * Gets mime type.
+     *
+     * @return the mime type
+     */
     public String getMimeType() {
         return mimeType;
     }
 
+    /**
+     * Sets mime type.
+     *
+     * @param mimeType the mime type
+     */
     public void setMimeType(String mimeType) {
         this.mimeType = mimeType;
     }
 
-    public abstract class JobExecutionMixin {
+    /**
+     * The type Job execution mixin.
+     */
+    public abstract static class JobExecutionMixin {
         @JsonManagedReference
         private Collection<StepExecution> stepExecutions;
     }
 
-    public abstract class StepExecutionsMixin {
+    /**
+     * The type Step executions mixin.
+     */
+    public abstract static class StepExecutionsMixin {
         @JsonIgnore
         private JobExecution jobExecution;
     }

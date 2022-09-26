@@ -1,10 +1,12 @@
 package com.oslash.integration.utils;
 
+/**
+ * The interface Constants.
+ */
 public interface Constants {
     String USER_ID = "userId";
     String CONTENT = "content";
     String FILE_ID = "fileId";
-
     String FILE_NAME = "fileName";
     String MIME_TYPE = "mimeType";
     String NEXT_PAGE_TOKEN = "nextPageToken";
@@ -13,6 +15,5 @@ public interface Constants {
     String WORKER_FILE_DOWNLOADER_STEP_NAME = "file-meta-worker-download";
     String WORKER_FILE_META_STEP_NAME = "file-meta-worker-download";
     String MIME_TYPE_TEXT_PLAIN = "text/plain";
-
     String BUCKET_PREFIX = "user-";
 }

@@ -30,6 +30,9 @@ import org.springframework.integration.dsl.IntegrationFlows;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * The type Manager configuration.
+ */
 @Configuration
 @Profile("manager")
 public class ManagerConfiguration {
@@ -47,16 +50,32 @@ public class ManagerConfiguration {
     @Value("${app.batch.partition-size}")
     private Integer partitionSize;
 
+    /**
+     * Requests direct channel.
+     *
+     * @return the direct channel
+     */
     @Bean
     public DirectChannel requests() {
         return new DirectChannel();
     }
 
+    /**
+     * Replies queue channel.
+     *
+     * @return the queue channel
+     */
     @Bean
     public QueueChannel replies() {
         return new QueueChannel();
     }
 
+    /**
+     * Outbound flow integration flow.
+     *
+     * @param sqsAsync the sqs async
+     * @return the integration flow
+     */
     @Bean(name = "outboundFlow")
     public IntegrationFlow outboundFlow(@Qualifier("amazonSQSRequestAsync") AmazonSQSAsync sqsAsync) {
         SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(sqsAsync);
@@ -64,6 +83,12 @@ public class ManagerConfiguration {
         return IntegrationFlows.from(requests()).transform(appConfiguration.objectToJsonTransformer()).log().handle(sqsMessageHandler).get();
     }
 
+    /**
+     * Inbound flow integration flow.
+     *
+     * @param sqsAsync the sqs async
+     * @return the integration flow
+     */
     @Bean(name = "inboundFlow")
     public IntegrationFlow inboundFlow(@Qualifier("amazonSQSReplyAsync") AmazonSQSAsync sqsAsync) {
         SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(sqsAsync);
@@ -72,20 +97,43 @@ public class ManagerConfiguration {
     }
 
 
-    // read - process and write will be made in slave
+    /**
+     * Remote partition job job.
+     *
+     * @param user the user
+     * @return the job
+     */
+// read - process and write will be made in slave
     public Job remotePartitionJob(User user) {
         return jobBuilderFactory.get(String.format("%s-%s-%s", "file-meta-job", user.getId(), new Date().getTime())).start(partitionerStep(user)).incrementer(new RunIdIncrementer()).build();
     }
 
+    /**
+     * Partitioner files partitioner.
+     *
+     * @param user the user
+     * @return the files partitioner
+     */
     public FilesPartitioner partitioner(User user) {
         return new FilesPartitioner(user, appConfiguration);
     }
 
+    /**
+     * Partitioner step step.
+     *
+     * @param user the user
+     * @return the step
+     */
     public Step partitionerStep(User user) {
         // move grid size to config
         return partitionStepBuilderFactory.get("partitionerStep").partitioner(Constants.WORKER_STEP_NAME, partitioner(user)).gridSize(partitionSize).outputChannel(requests()).build();
     }
 
+    /**
+     * Schedule job for user.
+     *
+     * @param user the user
+     */
     public void scheduleJobForUser(User user) {
         CompletableFuture completableFuture = new CompletableFuture();
         synchronized (user.getId()) {

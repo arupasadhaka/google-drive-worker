@@ -6,11 +6,19 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
 
+/**
+ * The type Application.
+ */
 @EnableBatchProcessing
 @EnableBatchIntegration
-@SpringBootApplication(exclude={JmxAutoConfiguration.class})
+@SpringBootApplication(exclude = {JmxAutoConfiguration.class})
 public class Application {
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
-	}
+    /**
+     * The entry point of application.
+     *
+     * @param args the input arguments
+     */
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
 }

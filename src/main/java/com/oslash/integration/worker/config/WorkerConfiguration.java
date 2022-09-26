@@ -5,11 +5,13 @@ import com.google.api.services.drive.Drive;
 import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.models.FileMeta;
 import com.oslash.integration.models.FileStorage;
+import com.oslash.integration.resolver.IntegrationResolver;
 import com.oslash.integration.utils.Constants;
 import com.oslash.integration.worker.model.FileStorageInfo;
 import com.oslash.integration.worker.transformer.MessageTransformer;
 import com.oslash.integration.worker.writer.FileMetaWriter;
 import com.oslash.integration.worker.writer.FileStorageWriter;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,30 +50,56 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.oslash.integration.resolver.IntegrationResolver.integrationResolver;
 import static com.oslash.integration.utils.Constants.*;
 
+/**
+ * The type Worker configuration.
+ */
 @Configuration
 @Profile("worker")
 public class WorkerConfiguration {
+    /**
+     * The Logger.
+     */
     Logger logger = LoggerFactory.getLogger(getClass());
 
+    /**
+     * The App configuration.
+     */
     @Autowired
     AppConfiguration appConfiguration;
 
+    /**
+     * The File meta writer.
+     */
     @Autowired
     FileMetaWriter fileMetaWriter;
 
+    /**
+     * The File storage writer.
+     */
     @Autowired
     FileStorageWriter fileStorageWriter;
 
+    /**
+     * The Job repository.
+     */
     @Autowired
     JobRepository jobRepository;
+    /**
+     * The Transaction manager.
+     */
     @Autowired
     PlatformTransactionManager transactionManager;
     @Autowired
     private RemotePartitioningWorkerStepBuilderFactory stepBuilderFactory;
 
+    /**
+     * Inbound flow integration flow.
+     *
+     * @param sqsAsync the sqs async
+     * @return the integration flow
+     */
     @Bean
     @ConditionalOnMissingBean(value = ObjectNamingStrategy.class, search = SearchStrategy.CURRENT)
     public IntegrationFlow inboundFlow(@Qualifier("amazonSQSRequestAsync") AmazonSQSAsync sqsAsync) {
@@ -79,6 +107,12 @@ public class WorkerConfiguration {
         return IntegrationFlows.from(adapter).transform(messageTransformer()).channel(requests()).get();
     }
 
+    /**
+     * Outbound flow integration flow.
+     *
+     * @param sqsAsync the sqs async
+     * @return the integration flow
+     */
     @Bean
     @ConditionalOnMissingBean(value = ObjectNamingStrategy.class, search = SearchStrategy.CURRENT)
     public IntegrationFlow outboundFlow(@Qualifier("amazonSQSReplyAsync") AmazonSQSAsync sqsAsync) {
@@ -87,21 +121,41 @@ public class WorkerConfiguration {
         return IntegrationFlows.from(replies()).transform(appConfiguration.objectToJsonTransformer()).log().handle(sqsMessageHandler).get();
     }
 
+    /**
+     * Message transformer transformer.
+     *
+     * @return the transformer
+     */
     @Bean
     public Transformer messageTransformer() {
         return new MessageTransformer();
     }
 
+    /**
+     * Requests direct channel.
+     *
+     * @return the direct channel
+     */
     @Bean
     public DirectChannel requests() {
         return new DirectChannel();
     }
 
+    /**
+     * Replies direct channel.
+     *
+     * @return the direct channel
+     */
     @Bean
     public DirectChannel replies() {
         return new DirectChannel();
     }
 
+    /**
+     * File meta flow flow.
+     *
+     * @return the flow
+     */
     public Flow fileMetaFlow() {
         Flow fileDownloadFlow = new FlowBuilder<Flow>("fileDownload-Flow")
                 .start(fileDownloadStep())
@@ -121,7 +175,7 @@ public class WorkerConfiguration {
     /**
      * worker step bean name should be mapped with manager step while creating
      *
-     * @return
+     * @return step step
      * @See com.oslash.integration.utils.Constants#WORKER_STEP_NAME
      */
     @Bean(name = Constants.WORKER_STEP_NAME)
@@ -129,10 +183,17 @@ public class WorkerConfiguration {
         return stepBuilderFactory.get(WORKER_STEP_NAME).inputChannel(requests()).flow(fileMetaFlow()).build();
     }
 
+    /**
+     * File download step step.
+     *
+     * @return the step
+     */
+    @SuppressFBWarnings("NP_NULL_PARAM_DEREF_ALL_TARGETS_DANGEROUS")
     public Step fileDownloadStep() {
         SimpleStepBuilder simpleStepBuilder = new SimpleStepBuilder(new StepBuilder(WORKER_FILE_DOWNLOADER_STEP_NAME));
         // todo move chunk size to config
-        simpleStepBuilder.<Map, FileMeta>chunk(5).reader(fileStorageReader(null))
+        simpleStepBuilder.chunk(5)
+                .reader(fileStorageReader(null))
                 .processor(fileStorageProcessor())
                 .writer(fileStorageWriter());
         simpleStepBuilder.repository(jobRepository);
@@ -140,32 +201,58 @@ public class WorkerConfiguration {
         return simpleStepBuilder.build();
     }
 
+    /**
+     * File meta save step step.
+     *
+     * @return the step
+     */
+    @SuppressFBWarnings("NP_NULL_PARAM_DEREF_ALL_TARGETS_DANGEROUS")
     public Step fileMetaSaveStep() {
         SimpleStepBuilder simpleStepBuilder = new SimpleStepBuilder(new StepBuilder(WORKER_FILE_META_STEP_NAME));
         // todo move chunk size to config
-        simpleStepBuilder.<Map, FileMeta>chunk(100).reader(fileMetaReader(null)).processor(fileMetaProcessor()).writer(fileMetaWriter());
+        simpleStepBuilder.chunk(100).reader(fileMetaReader(null)).processor(fileMetaProcessor()).writer(fileMetaWriter());
         simpleStepBuilder.repository(jobRepository);
         simpleStepBuilder.transactionManager(transactionManager);
         return simpleStepBuilder.build();
     }
 
+    /**
+     * Task executor simple async task executor.
+     *
+     * @return the simple async task executor
+     */
     @Bean
     public SimpleAsyncTaskExecutor taskExecutor() {
         return new SimpleAsyncTaskExecutor();
     }
 
+    /**
+     * File meta writer async item writer.
+     *
+     * @return the async item writer
+     */
     public AsyncItemWriter<FileMeta> fileMetaWriter() {
         AsyncItemWriter<FileMeta> writer = new AsyncItemWriter<>();
         writer.setDelegate(fileMetaWriter);
         return writer;
     }
 
+    /**
+     * File storage writer async item writer.
+     *
+     * @return the async item writer
+     */
     public AsyncItemWriter<FileStorageInfo> fileStorageWriter() {
         AsyncItemWriter<FileStorageInfo> writer = new AsyncItemWriter<>();
         writer.setDelegate(fileStorageWriter);
         return writer;
     }
 
+    /**
+     * File storage processor async item processor.
+     *
+     * @return the async item processor
+     */
     public AsyncItemProcessor<Map, FileStorageInfo> fileStorageProcessor() {
         AsyncItemProcessor<Map, FileStorageInfo> processor = new AsyncItemProcessor<>();
         processor.setDelegate(new ItemProcessor<>() {
@@ -174,7 +261,7 @@ public class WorkerConfiguration {
             public FileStorageInfo process(Map item) {
                 final FileStorage fileStorage = new FileStorage.Builder().file(item).build();
                 logger.info("Processing file downloader for file " + fileStorage.getFileId());
-                final Drive drive = integrationResolver().resolveGDrive(fileStorage.getUserId());
+                final Drive drive = IntegrationResolver.resolveGDrive(fileStorage.getUserId());
                 final InputStream fileStream = drive.files().export(fileStorage.getFileId(), Constants.MIME_TYPE_TEXT_PLAIN).executeMediaAsInputStream();
                 return new FileStorageInfo.Builder().fileStream(fileStream).file(fileStorage).userId(fileStorage.getUserId()).build();
             }
@@ -183,6 +270,11 @@ public class WorkerConfiguration {
         return processor;
     }
 
+    /**
+     * File meta processor async item processor.
+     *
+     * @return the async item processor
+     */
     public AsyncItemProcessor<Map, FileMeta> fileMetaProcessor() {
         AsyncItemProcessor<Map, FileMeta> processor = new AsyncItemProcessor<>();
         processor.setDelegate(new ItemProcessor<>() {
@@ -198,6 +290,12 @@ public class WorkerConfiguration {
     }
 
 
+    /**
+     * File meta reader item reader.
+     *
+     * @param data the data
+     * @return the item reader
+     */
     @Bean
     @StepScope
     public ItemReader<Map> fileMetaReader(@Value("#{stepExecutionContext['data']}") List<Map> data) {
@@ -213,6 +311,12 @@ public class WorkerConfiguration {
         };
     }
 
+    /**
+     * File storage reader item reader.
+     *
+     * @param data the data
+     * @return the item reader
+     */
     @Bean
     @StepScope
     public ItemReader<Map> fileStorageReader(@Value("#{stepExecutionContext['data']}") List<Map> data) {

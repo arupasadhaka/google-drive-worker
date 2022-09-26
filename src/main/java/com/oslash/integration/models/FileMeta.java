@@ -1,6 +1,5 @@
 package com.oslash.integration.models;
 
-import com.google.api.services.drive.model.File;
 import com.oslash.integration.utils.Constants;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,6 +13,9 @@ import java.util.Map;
 import static java.util.Objects.nonNull;
 
 
+/**
+ * The type File meta.
+ */
 @Data
 @ToString
 @AllArgsConstructor
@@ -27,12 +29,24 @@ public class FileMeta {
     private String userId;
     private Object content;
 
+    /**
+     * Instantiates a new File meta.
+     *
+     * @param id       the id
+     * @param mimeType the mime type
+     * @param content  the content
+     */
     public FileMeta(String id, String mimeType, Object content) {
         this.id = id;
         this.mimeType = mimeType;
         this.content = content;
     }
 
+    /**
+     * Instantiates a new File meta.
+     *
+     * @param builder the builder
+     */
     public FileMeta(Builder builder) {
         setId(builder.id);
         setUserId(builder.userId);
@@ -40,6 +54,9 @@ public class FileMeta {
         setContent(builder.content);
     }
 
+    /**
+     * The type Builder.
+     */
     public static final class Builder {
         private String id;
         private String mimeType;
@@ -47,31 +64,62 @@ public class FileMeta {
 
         private String userId;
 
-        private File file;
-
+        /**
+         * Instantiates a new Builder.
+         */
         public Builder() {
         }
 
+        /**
+         * Id builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder id(String val) {
             id = val;
             return this;
         }
 
+        /**
+         * Mime type builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder mimeType(String val) {
             mimeType = val;
             return this;
         }
 
+        /**
+         * User id builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder userId(String val) {
             userId = val;
             return this;
         }
 
+        /**
+         * Content builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder content(Object val) {
             content = val;
             return this;
         }
 
+        /**
+         * File builder.
+         *
+         * @param item the item
+         * @return the builder
+         */
         public Builder file(Map item) {
             this.content = item;
             if (nonNull(item.get(Constants.FILE_ID))) {
@@ -89,6 +137,11 @@ public class FileMeta {
             return this;
         }
 
+        /**
+         * Build file meta.
+         *
+         * @return the file meta
+         */
         public FileMeta build() {
             return new FileMeta(this);
         }

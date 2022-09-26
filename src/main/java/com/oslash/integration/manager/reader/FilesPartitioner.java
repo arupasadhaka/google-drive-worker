@@ -5,7 +5,9 @@ import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.models.User;
+import com.oslash.integration.resolver.IntegrationResolver;
 import com.oslash.integration.utils.Constants;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.SneakyThrows;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
@@ -19,29 +21,54 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.oslash.integration.resolver.IntegrationResolver.integrationResolver;
-
+/**
+ * The type Files partitioner.
+ */
 public class FilesPartitioner extends MultiResourcePartitioner {
+    /**
+     * The constant PARTITION_PREFIX.
+     */
     public static final String PARTITION_PREFIX = "partition";
     private final User user;
     private final AppConfiguration appConfiguration;
+    /**
+     * The Logger.
+     */
     Logger logger = LoggerFactory.getLogger(getClass());
     private String nextPageToken;
     private Drive drive;
     private boolean reachedEnd;
 
+    /**
+     * Instantiates a new Files partitioner.
+     *
+     * @param user             the user
+     * @param appConfiguration the app configuration
+     */
+    @SuppressFBWarnings({"EI_EXPOSE_REP2"})
     public FilesPartitioner(User user, AppConfiguration appConfiguration) {
         this.appConfiguration = appConfiguration;
         this.user = user;
         init(user);
     }
 
+    /**
+     * Init.
+     *
+     * @param user the user
+     */
     @SneakyThrows
     private void init(User user) {
-        this.drive = integrationResolver().resolveGDrive(user.getId());
+        this.drive = IntegrationResolver.resolveGDrive(user.getId());
     }
 
 
+    /**
+     * Partition map.
+     *
+     * @param gridSize the grid size
+     * @return the map
+     */
     @Override
     public Map<String, ExecutionContext> partition(int gridSize) {
         int partitionCount = 0;
@@ -73,13 +100,19 @@ public class FilesPartitioner extends MultiResourcePartitioner {
                     logger.info(String.format("fetched %s files for the user %s", partitions.keySet().size(), user.getId()));
                 }
             } catch (IOException e) {
-                logger.error(String.format("error while partitioning files for user %s", user.getId()), e);
-                throw new RuntimeException(e);
+                String message = String.format("error while partitioning files for user %s", user.getId());
+                throw new RuntimeException(message, e);
             }
         }
         return partitions;
     }
 
+    /**
+     * Gets partition meta data.
+     *
+     * @param fileList the file list
+     * @return the partition meta data
+     */
     private List<Map> getPartitionMetaData(FileList fileList) {
         List<Map> filesMeta = new ArrayList();
         int size = fileList.size();

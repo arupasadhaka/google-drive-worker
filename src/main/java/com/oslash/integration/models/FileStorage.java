@@ -12,6 +12,9 @@ import java.util.Map;
 
 import static java.util.Objects.nonNull;
 
+/**
+ * The type File storage.
+ */
 @Data
 @ToString
 @AllArgsConstructor
@@ -27,6 +30,11 @@ public class FileStorage {
     private String mimeType;
     private String fileName;
 
+    /**
+     * Instantiates a new File storage.
+     *
+     * @param builder the builder
+     */
     private FileStorage(Builder builder) {
         setId(builder.id);
         setFileId(builder.fileId);
@@ -37,6 +45,9 @@ public class FileStorage {
         setFileName(builder.fileName);
     }
 
+    /**
+     * The type Builder.
+     */
     public static final class Builder {
         private String id;
         private String fileId;
@@ -47,39 +58,84 @@ public class FileStorage {
         private String bucket;
         private String mimeType;
 
+        /**
+         * Instantiates a new Builder.
+         */
         public Builder() {
         }
 
+        /**
+         * Id builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder id(String val) {
             id = val;
             return this;
         }
 
+        /**
+         * File id builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder fileId(String val) {
             fileId = val;
             return this;
         }
 
+        /**
+         * User id builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder userId(String val) {
             userId = val;
             return this;
         }
 
+        /**
+         * Source url builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder sourceUrl(String val) {
             sourceUrl = val;
             return this;
         }
 
+        /**
+         * Bucket builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder bucket(String val) {
             bucket = val;
             return this;
         }
 
+        /**
+         * Mime type builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
         public Builder mimeType(String val) {
             mimeType = val;
             return this;
         }
 
+        /**
+         * File builder.
+         *
+         * @param item the item
+         * @return the builder
+         */
         public Builder file(Map item) {
             if (nonNull(item.get(Constants.FILE_ID))) {
                 this.fileId = String.valueOf(item.get(Constants.FILE_ID));
@@ -96,6 +152,11 @@ public class FileStorage {
             return this;
         }
 
+        /**
+         * Build file storage.
+         *
+         * @return the file storage
+         */
         public FileStorage build() {
             return new FileStorage(this);
         }
