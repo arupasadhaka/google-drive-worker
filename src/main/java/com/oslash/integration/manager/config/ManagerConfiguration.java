@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.integration.aws.outbound.SqsMessageHandler;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.QueueChannel;
+import org.springframework.integration.core.MessagingTemplate;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 
@@ -56,7 +57,7 @@ public class ManagerConfiguration {
      * @return the direct channel
      */
     @Bean
-    public DirectChannel requests() {
+    public DirectChannel outboundRequests() {
         return new DirectChannel();
     }
 
@@ -66,7 +67,7 @@ public class ManagerConfiguration {
      * @return the queue channel
      */
     @Bean
-    public QueueChannel replies() {
+    public QueueChannel outboundReplies() {
         return new QueueChannel();
     }
 
@@ -80,7 +81,7 @@ public class ManagerConfiguration {
     public IntegrationFlow outboundFlow(@Qualifier("amazonSQSRequestAsync") AmazonSQSAsync sqsAsync) {
         SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(sqsAsync);
         sqsMessageHandler.setQueue(appConfiguration.getRequestQueName());
-        return IntegrationFlows.from(requests()).transform(appConfiguration.objectToJsonTransformer()).log().handle(sqsMessageHandler).get();
+        return IntegrationFlows.from(outboundRequests()).transform(appConfiguration.objectToJsonTransformer()).log().handle(sqsMessageHandler).get();
     }
 
     /**
@@ -93,7 +94,7 @@ public class ManagerConfiguration {
     public IntegrationFlow inboundFlow(@Qualifier("amazonSQSReplyAsync") AmazonSQSAsync sqsAsync) {
         SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(sqsAsync);
         sqsMessageHandler.setQueue(appConfiguration.getReplyQueName());
-        return IntegrationFlows.from(replies()).transform(appConfiguration.objectToJsonTransformer()).log().handle(sqsMessageHandler).get();
+        return IntegrationFlows.from(outboundReplies()).transform(appConfiguration.objectToJsonTransformer()).log().handle(sqsMessageHandler).get();
     }
 
 
@@ -115,7 +116,7 @@ public class ManagerConfiguration {
      * @return the files partitioner
      */
     public FilesPartitioner partitioner(User user) {
-        return new FilesPartitioner(user, appConfiguration);
+        return new FilesPartitioner(user, appConfiguration).partition();
     }
 
     /**
@@ -125,8 +126,18 @@ public class ManagerConfiguration {
      * @return the step
      */
     public Step partitionerStep(User user) {
+        MessagingTemplate template = new MessagingTemplate();
+        template.setDefaultChannel(outboundRequests());
+        template.setReceiveTimeout(100000);
+
         // move grid size to config
-        return partitionStepBuilderFactory.get("partitionerStep").partitioner(Constants.WORKER_STEP_NAME, partitioner(user)).gridSize(managerPartitionSize).outputChannel(requests()).build();
+        return partitionStepBuilderFactory.get("partitionerStep")
+                .partitioner(Constants.WORKER_STEP_NAME, partitioner(user))
+                .gridSize(managerPartitionSize)
+                .outputChannel(outboundRequests())
+                .inputChannel(outboundReplies())
+                .messagingTemplate(template)
+                .build();
     }
 
     /**

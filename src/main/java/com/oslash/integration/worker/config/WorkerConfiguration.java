@@ -187,7 +187,11 @@ public class WorkerConfiguration {
      */
     @Bean(name = Constants.WORKER_STEP_NAME)
     public Step workerStep() {
-        return stepBuilderFactory.get(WORKER_STEP_NAME).inputChannel(requests()).flow(fileMetaFlow()).build();
+        return stepBuilderFactory.get(WORKER_STEP_NAME)
+                .inputChannel(requests())
+                .outputChannel(replies())
+                .flow(fileMetaFlow())
+                .build();
     }
 
     /**
