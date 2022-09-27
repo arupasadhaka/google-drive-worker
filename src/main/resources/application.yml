@@ -51,9 +51,9 @@ app:
     worker:
       download:
         meta:
-          chunk-size: 20
+          chunk-size: 50
         file:
-          chunk-size: 20
+          chunk-size: 50
 
   drive:
     mime-types: "application/octet-stream"

@@ -80,7 +80,9 @@ public class FileStorageService {
         }
         logger.info(String.format("saved file %s for user %s in bucket id %s", fileName, userId, bucketName));
         ObjectMetadata objectMeta = new ObjectMetadata();
-        objectMeta.setContentLength(fileStorageInfo.getFile().getSize());
+        if (fileStorageInfo.getFile().getSize() != null) {
+            objectMeta.setContentLength(fileStorageInfo.getFile().getSize());
+        }
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fileName, fileStorageInfo.getFileStream(), objectMeta);
         /**
          * need to add when size cannot be determined

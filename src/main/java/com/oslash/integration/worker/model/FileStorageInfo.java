@@ -25,7 +25,7 @@ public class FileStorageInfo {
      */
     private FileStorageInfo(Builder builder) {
         setFileStorage(builder.fileStorage);
-        file = builder.file;
+        setFile(builder.file);
         setUserId(builder.userId);
         setFileStream(builder.fileStream);
     }
