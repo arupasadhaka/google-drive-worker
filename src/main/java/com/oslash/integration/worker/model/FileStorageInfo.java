@@ -1,5 +1,6 @@
 package com.oslash.integration.worker.model;
 
+import com.google.api.services.drive.model.File;
 import com.oslash.integration.models.FileStorage;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -10,8 +11,9 @@ import java.io.InputStream;
  */
 public class FileStorageInfo {
 
-    private FileStorage file;
+    private FileStorage fileStorage;
 
+    private File file;
     private String userId;
 
     private InputStream fileStream;
@@ -22,9 +24,10 @@ public class FileStorageInfo {
      * @param builder the builder
      */
     private FileStorageInfo(Builder builder) {
+        setFileStorage(builder.fileStorage);
         file = builder.file;
-        userId = builder.userId;
-        fileStream = builder.fileStream;
+        setUserId(builder.userId);
+        setFileStream(builder.fileStream);
     }
 
     /**
@@ -33,18 +36,18 @@ public class FileStorageInfo {
      * @return the file
      */
     @SuppressFBWarnings("EI_EXPOSE_REP")
-    public FileStorage getFile() {
-        return file;
+    public FileStorage getFileStorage() {
+        return fileStorage;
     }
 
     /**
      * Sets file.
      *
-     * @param file the file
+     * @param fileStorage the file
      */
     @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public void setFile(FileStorage file) {
-        this.file = file;
+    public void setFileStorage(FileStorage fileStorage) {
+        this.fileStorage = fileStorage;
     }
 
     /**
@@ -84,10 +87,29 @@ public class FileStorageInfo {
     }
 
     /**
+     * Gets file.
+     *
+     * @return the file
+     */
+    public File getFile() {
+        return file;
+    }
+
+    /**
+     * Sets file.
+     *
+     * @param file the file
+     */
+    public void setFile(File file) {
+        this.file = file;
+    }
+
+    /**
      * The type Builder.
      */
     public static final class Builder {
-        private FileStorage file;
+        private FileStorage fileStorage;
+        private File file;
         private String userId;
         private InputStream fileStream;
 
@@ -97,17 +119,8 @@ public class FileStorageInfo {
         public Builder() {
         }
 
-        /**
-         * File builder.
-         *
-         * @param val the val
-         * @return the builder
-         */
-        @SuppressFBWarnings("EI_EXPOSE_REP2")
-        public Builder file(FileStorage val) {
-            file = val;
-            return this;
-        }
+
+
 
         /**
          * User id builder.
@@ -138,6 +151,29 @@ public class FileStorageInfo {
          */
         public FileStorageInfo build() {
             return new FileStorageInfo(this);
+        }
+
+        /**
+         * File storage builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
+        @SuppressFBWarnings("EI_EXPOSE_REP2")
+        public Builder fileStorage(FileStorage val) {
+            fileStorage = val;
+            return this;
+        }
+
+        /**
+         * File builder.
+         *
+         * @param val the val
+         * @return the builder
+         */
+        public Builder file(File val) {
+            file = val;
+            return this;
         }
     }
 }

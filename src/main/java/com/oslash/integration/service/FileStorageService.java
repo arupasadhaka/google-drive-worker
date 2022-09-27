@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.model.File;
 import com.oslash.integration.config.AppConfiguration;
 import com.oslash.integration.models.FileStorage;
 import com.oslash.integration.repository.FileStorageRepository;
@@ -70,7 +71,7 @@ public class FileStorageService {
      */
     public void uploadFile(FileStorageInfo fileStorageInfo) {
         String userId = fileStorageInfo.getUserId();
-        String fileName = fileStorageInfo.getFile().getFileName();
+        String fileName = fileStorageInfo.getFileStorage().getFileName();
         AmazonS3 storageService = IntegrationResolver.resolveStorage();
         final String bucketName = getBucketName(userId);
         if (!storageService.doesBucketExistV2(bucketName)) {
@@ -78,11 +79,18 @@ public class FileStorageService {
             logger.info(String.format("created bucket with name %s for the user %s", bucketName, userId));
         }
         logger.info(String.format("saved file %s for user %s in bucket id %s", fileName, userId, bucketName));
-        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fileName, fileStorageInfo.getFileStream(), new ObjectMetadata());
-        putObjectRequest.getRequestClientOptions().setReadLimit(appConfiguration.getBufferSize());
+        ObjectMetadata objectMeta = new ObjectMetadata();
+        objectMeta.setContentLength(fileStorageInfo.getFile().getSize());
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fileName, fileStorageInfo.getFileStream(), objectMeta);
+        /**
+         * need to add when size cannot be determined
+         */
+        if (objectMeta.getContentLength() == 0l) {
+            putObjectRequest.getRequestClientOptions().setReadLimit(appConfiguration.getBufferSize());
+        }
         storageService.putObject(putObjectRequest);
         // TODO get absolute URL from result with region
-        fileStorageInfo.getFile().setSourceUrl(String.format("%s/%s", bucketName, fileName));
+        fileStorageInfo.getFileStorage().setSourceUrl(String.format("%s/%s", bucketName, fileName));
     }
 
     /**
@@ -134,7 +142,8 @@ public class FileStorageService {
         final FileStorage fileStorage = new FileStorage.Builder().file(item).build();
         logger.info("Processing file meta to download file " + fileStorage.getFileId());
         final Drive drive = IntegrationResolver.resolveGDrive(fileStorage.getUserId());
-        final InputStream fileStream = drive.files().get(fileStorage.getFileId()).executeMediaAsInputStream();
-        return new FileStorageInfo.Builder().fileStream(fileStream).file(fileStorage).userId(fileStorage.getUserId()).build();
+        File file = drive.files().get(fileStorage.getFileId()).execute();
+        final InputStream fileStream = drive.files().get(file.getId()).executeMediaAsInputStream();
+        return new FileStorageInfo.Builder().fileStream(fileStream).fileStorage(fileStorage).file(file).userId(fileStorage.getUserId()).build();
     }
 }

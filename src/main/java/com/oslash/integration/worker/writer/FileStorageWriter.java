@@ -29,7 +29,7 @@ public class FileStorageWriter implements ItemWriter<FileStorageInfo> {
     public void write(List<? extends FileStorageInfo> list) throws Exception {
         for (FileStorageInfo input : list) {
             fileStorageService.uploadFile(input);
-            fileStorageService.save(input.getFile()).subscribe();
+            fileStorageService.save(input.getFileStorage()).subscribe();
         }
     }
 }

@@ -116,7 +116,7 @@ public class FilesController {
             if (fileState.in(add)) {
                 FileStorageInfo fileStorageInfo = fileStorageService.getFileStorageInfo(fileMeta.asMap());
                 fileStorageService.uploadFile(fileStorageInfo);
-                fileStorage = fileStorageInfo.getFile();
+                fileStorage = fileStorageInfo.getFileStorage();
             }
             fileStorageService.save(fileStorage);
             if (isDeleted) {
