@@ -162,7 +162,7 @@ awslocal s3 rb s3://user-people111647754396159229803 --force;
 | Sync   | 50           | 38s                          | < 50kb            | 1       |
 | Async  | 100          | 32s                          | 100kb             | 1       |
 | Async  | 100          | 42s                          | 500kb             | 1       |
-| Async  | 1000         | 33s (increased buffer limit) | 1000kb            | 1       |
+| Async  | 100          | 33s (increased buffer limit) | 1000kb            | 1       |
 
 
 
